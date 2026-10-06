@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Tesla Fake Engine</title>
+<title>Tesla Virtual Engine</title>
 
 <style>
 
@@ -24,7 +24,7 @@ body {
   width: 92%;
   max-width: 700px;
   margin: auto;
-  padding: 25px 0;
+  padding: 25px 0 40px;
 }
 
 h1 {
@@ -103,12 +103,11 @@ button {
 
 <div class="app">
 
-<h1>🚗 Tesla Fake Engine</h1>
+<h1>🏎️ Tesla Virtual Engine</h1>
 
 <div class="status" id="status">
 Bereit
 </div>
-
 
 <div class="speed" id="speed">
 0
@@ -117,7 +116,6 @@ Bereit
 <div class="unit">
 km/h
 </div>
-
 
 <div class="card">
 
@@ -131,7 +129,6 @@ Virtuelle Drehzahl
 
 </div>
 
-
 <div class="card">
 
 <div class="label">
@@ -144,21 +141,19 @@ Motorlast
 
 </div>
 
-
 <button id="start">
 🔊 MOTOR STARTEN
 </button>
-
 
 <button id="stop" disabled>
 ⏹ STOPPEN
 </button>
 
-
 <div class="info">
 
+Virtueller Mehrzylinder-Motorsound.
 Die Drehzahl wird aus der GPS-Geschwindigkeit
-berechnet. Der Sound wird direkt im Browser erzeugt.
+berechnet.
 
 </div>
 
@@ -166,6 +161,7 @@ berechnet. Der Sound wird direkt im Browser erzeugt.
 
 
 <script>
+
 
 /* =====================================================
    GPS
@@ -188,13 +184,19 @@ let acceleration = 0;
 
 let audioContext = null;
 
-let oscillator = null;
+let masterGain = null;
 
-let gainNode = null;
+let lowOsc = null;
+let midOsc = null;
+let highOsc = null;
 
-let filterNode = null;
+let lowGain = null;
+let midGain = null;
+let highGain = null;
 
-let audioStarted = false;
+let engineFilter = null;
+
+let engineStarted = false;
 
 
 /* =====================================================
@@ -221,12 +223,12 @@ const stopButton =
 
 
 /* =====================================================
-   AUDIO STARTEN
+   MOTOR SOUND INITIALISIEREN
    ===================================================== */
 
 function startEngineSound() {
 
-  if (audioStarted) {
+  if (engineStarted) {
     return;
   }
 
@@ -237,105 +239,176 @@ function startEngineSound() {
 
 
   /*
-   * Hauptoszillator
+   * Master-Lautstärke
    */
 
-  oscillator =
-    audioContext.createOscillator();
+  masterGain =
+    audioContext.createGain();
+
+  masterGain.gain.value =
+    0.06;
 
 
   /*
-   * Lautstärke
+   * Filter
    */
 
-  gainNode =
+  engineFilter =
+    audioContext.createBiquadFilter();
+
+  engineFilter.type =
+    "lowpass";
+
+  engineFilter.frequency.value =
+    1200;
+
+  engineFilter.Q.value =
+    1.2;
+
+
+  /*
+   * ===============================================
+   * TIEFER MOTOR
+   * ===============================================
+   */
+
+  lowOsc =
+    audioContext.createOscillator();
+
+  lowGain =
     audioContext.createGain();
 
 
-  /*
-   * Filter macht den Klang etwas weicher.
-   */
-
-  filterNode =
-    audioContext.createBiquadFilter();
-
-
-  oscillator.type =
+  lowOsc.type =
     "sawtooth";
 
-
-  filterNode.type =
-    "lowpass";
-
-
-  filterNode.frequency.value =
-    1200;
+  lowGain.gain.value =
+    0.7;
 
 
   /*
-   * Startlautstärke sehr niedrig.
+   * ===============================================
+   * MITTLERER MOTORANTEIL
+   * ===============================================
    */
 
-  gainNode.gain.value =
-    0.0001;
+  midOsc =
+    audioContext.createOscillator();
+
+  midGain =
+    audioContext.createGain();
 
 
-  oscillator.connect(
-    filterNode
+  midOsc.type =
+    "triangle";
+
+  midGain.gain.value =
+    0.35;
+
+
+  /*
+   * ===============================================
+   * HOCHFREQUENTER ANTEIL
+   * ===============================================
+   */
+
+  highOsc =
+    audioContext.createOscillator();
+
+  highGain =
+    audioContext.createGain();
+
+
+  highOsc.type =
+    "square";
+
+  highGain.gain.value =
+    0.08;
+
+
+  /*
+   * AUDIO ROUTING
+   */
+
+  lowOsc.connect(
+    lowGain
+  );
+
+  midOsc.connect(
+    midGain
+  );
+
+  highOsc.connect(
+    highGain
   );
 
 
-  filterNode.connect(
-    gainNode
+  lowGain.connect(
+    engineFilter
+  );
+
+  midGain.connect(
+    engineFilter
+  );
+
+  highGain.connect(
+    engineFilter
   );
 
 
-  gainNode.connect(
+  engineFilter.connect(
+    masterGain
+  );
+
+
+  masterGain.connect(
     audioContext.destination
   );
 
 
-  oscillator.start();
+  /*
+   * Start
+   */
+
+  lowOsc.start();
+  midOsc.start();
+  highOsc.start();
 
 
-  audioStarted = true;
+  engineStarted = true;
 }
 
 
 /* =====================================================
-   MOTOR SOUND AKTUALISIEREN
+   ENGINE SOUND
    ===================================================== */
 
 function updateEngineSound() {
 
   if (
-    !audioStarted ||
-    !oscillator
+    !engineStarted
   ) {
     return;
   }
 
 
   /*
-   * Geschwindigkeit -> RPM
+   * -----------------------------------------------
+   * VIRTUELLE DREHZAHL
+   * -----------------------------------------------
    *
-   * 0 km/h    = 800 RPM
-   * 200 km/h  = 6500 RPM
+   * 0 km/h     = 850 RPM
+   * 200 km/h   = 6500 RPM
    */
 
   let rpm =
-    800 +
-    (currentSpeed / 200) *
-    5700;
+    850 +
+    (currentSpeed / 200) * 5650;
 
-
-  /*
-   * Begrenzen
-   */
 
   rpm =
     Math.max(
-      800,
+      850,
       Math.min(
         6500,
         rpm
@@ -344,12 +417,21 @@ function updateEngineSound() {
 
 
   /*
-   * Beschleunigung macht den Motor
-   * etwas aggressiver.
+   * -----------------------------------------------
+   * MOTORLAST
+   * -----------------------------------------------
    */
 
   let load =
-    Math.abs(acceleration) * 20;
+    Math.abs(acceleration) * 25;
+
+
+  /*
+   * Grundlast bei höherer Geschwindigkeit
+   */
+
+  load +=
+    currentSpeed * 0.04;
 
 
   load =
@@ -363,41 +445,95 @@ function updateEngineSound() {
 
 
   /*
-   * RPM -> Frequenz
+   * -----------------------------------------------
+   * MOTORFREQUENZ
+   * -----------------------------------------------
+   *
+   * Ein echter Motor besteht aus vielen
+   * Oberwellen.
    */
 
-  const frequency =
+  const base =
     rpm / 60;
 
 
-  oscillator.frequency.setTargetAtTime(
-    frequency,
+  const fundamental =
+    base * 4;
+
+
+  /*
+   * Tiefer Grundton
+   */
+
+  lowOsc.frequency.setTargetAtTime(
+    fundamental,
     audioContext.currentTime,
-    0.04
+    0.03
   );
 
 
   /*
-   * Lautstärke
+   * Mittlere Oberwelle
    */
 
-  let volume =
-    0.015 +
-    (load / 100) * 0.06;
+  midOsc.frequency.setTargetAtTime(
+    fundamental * 2.01,
+    audioContext.currentTime,
+    0.03
+  );
 
 
   /*
-   * Bei Stillstand sehr leise.
+   * Hohe Oberwelle
    */
 
-  if (currentSpeed < 2) {
+  highOsc.frequency.setTargetAtTime(
+    fundamental * 4.02,
+    audioContext.currentTime,
+    0.03
+  );
+
+
+  /*
+   * -----------------------------------------------
+   * LAST -> LAUTSTÄRKE
+   * -----------------------------------------------
+   */
+
+  let volume =
+    0.045 +
+    (load / 100) * 0.11;
+
+
+  /*
+   * Standgas
+   */
+
+  if (
+    currentSpeed < 2
+  ) {
 
     volume =
-      0.008;
+      0.025;
   }
 
 
-  gainNode.gain.setTargetAtTime(
+  /*
+   * -----------------------------------------------
+   * MOTORBREMSEN
+   * -----------------------------------------------
+   */
+
+  if (
+    acceleration < -0.5
+  ) {
+
+    volume *=
+      0.55;
+  }
+
+
+  masterGain.gain.setTargetAtTime(
     volume,
     audioContext.currentTime,
     0.08
@@ -405,20 +541,30 @@ function updateEngineSound() {
 
 
   /*
-   * Filter bei hoher Drehzahl öffnen.
+   * -----------------------------------------------
+   * FILTER
+   * -----------------------------------------------
+   *
+   * Bei höherer Drehzahl öffnet der Motor.
    */
 
   const filterFrequency =
-    700 +
-    (rpm / 6500) * 2500;
+    650 +
+    (rpm / 6500) * 4000;
 
 
-  filterNode.frequency.setTargetAtTime(
+  engineFilter.frequency.setTargetAtTime(
     filterFrequency,
     audioContext.currentTime,
-    0.08
+    0.06
   );
 
+
+  /*
+   * -----------------------------------------------
+   * DISPLAY
+   * -----------------------------------------------
+   */
 
   rpmElement.textContent =
     Math.round(rpm) +
@@ -446,12 +592,6 @@ function handlePosition(position) {
     position.coords.speed;
 
 
-  /*
-   * Falls speed nicht geliefert wird,
-   * versuchen wir aus GPS-Positionen
-   * zunächst nichts zu berechnen.
-   */
-
   if (
     typeof speed !== "number" ||
     !Number.isFinite(speed)
@@ -476,8 +616,7 @@ function handlePosition(position) {
 
 
   /*
-   * Beschleunigung aus
-   * Geschwindigkeitsänderung.
+   * Beschleunigung berechnen
    */
 
   if (
@@ -499,12 +638,12 @@ function handlePosition(position) {
 
 
       /*
-       * Glättung.
+       * Stärkere Glättung
        */
 
       acceleration =
-        acceleration * 0.75 +
-        rawAcceleration * 0.25;
+        acceleration * 0.80 +
+        rawAcceleration * 0.20;
     }
   }
 
@@ -521,7 +660,7 @@ function handlePosition(position) {
 
 
   statusElement.textContent =
-    "GPS aktiv";
+    "GPS + Motor aktiv";
 }
 
 
@@ -531,12 +670,16 @@ function handlePosition(position) {
 
 function handleGpsError(error) {
 
-  if (error.code === 1) {
+  if (
+    error.code === 1
+  ) {
 
     statusElement.textContent =
       "Standortzugriff verweigert";
 
-  } else {
+  }
+
+  else {
 
     statusElement.textContent =
       "GPS Fehler";
@@ -545,19 +688,18 @@ function handleGpsError(error) {
 
 
 /* =====================================================
-   AUDIO + ANIMATION
+   AUDIO LOOP
    ===================================================== */
 
 function audioLoop() {
 
   /*
-   * Geschwindigkeit langsam anpassen,
-   * damit der Motor nicht springt.
+   * Drehzahl nicht abrupt ändern.
    */
 
   currentSpeed +=
     (targetSpeed - currentSpeed) *
-    0.08;
+    0.06;
 
 
   updateEngineSound();
@@ -578,11 +720,6 @@ startButton.addEventListener(
   async function() {
 
 
-    /*
-     * Audio muss durch Benutzeraktion
-     * gestartet werden.
-     */
-
     startEngineSound();
 
 
@@ -594,10 +731,6 @@ startButton.addEventListener(
       await audioContext.resume();
     }
 
-
-    /*
-     * GPS
-     */
 
     if (
       !("geolocation" in navigator)
@@ -634,6 +767,7 @@ startButton.addEventListener(
 
 
     audioLoop();
+
   }
 );
 
@@ -647,7 +781,9 @@ stopButton.addEventListener(
   function() {
 
 
-    if (watchId !== null) {
+    if (
+      watchId !== null
+    ) {
 
       navigator.geolocation.clearWatch(
         watchId
@@ -658,14 +794,14 @@ stopButton.addEventListener(
 
 
     if (
-      gainNode &&
+      masterGain &&
       audioContext
     ) {
 
-      gainNode.gain.setTargetAtTime(
+      masterGain.gain.setTargetAtTime(
         0.0001,
         audioContext.currentTime,
-        0.1
+        0.12
       );
     }
 
@@ -679,6 +815,7 @@ stopButton.addEventListener(
 
     stopButton.disabled =
       true;
+
   }
 );
 
