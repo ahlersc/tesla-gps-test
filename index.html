@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tesla GPS Test</title>
+
+  <title>Tesla Sensor Test</title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      min-height: 100vh;
       background: #111;
       color: white;
       font-family: Arial, sans-serif;
@@ -21,23 +22,23 @@
 
     .app {
       width: 92%;
-      max-width: 700px;
+      max-width: 750px;
       margin: auto;
-      padding: 25px 0;
+      padding: 25px 0 40px;
     }
 
     h1 {
       font-size: 32px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     #status {
       color: #aaa;
-      font-size: 20px;
+      font-size: 19px;
       margin-bottom: 25px;
     }
 
-    #speed {
+    .speed {
       font-size: 90px;
       font-weight: bold;
       line-height: 1;
@@ -58,7 +59,7 @@
     .card {
       background: #222;
       border-radius: 18px;
-      padding: 20px 10px;
+      padding: 18px 10px;
     }
 
     .label {
@@ -67,18 +68,44 @@
     }
 
     .value {
-      font-size: 30px;
+      font-size: 28px;
       font-weight: bold;
       margin-top: 8px;
     }
 
-    #state {
+    .state {
       background: #222;
       border-radius: 18px;
       padding: 20px;
       margin: 15px 0;
-      font-size: 26px;
+      font-size: 25px;
       font-weight: bold;
+    }
+
+    .sensor {
+      margin-top: 15px;
+      background: #181818;
+      border-radius: 18px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .sensor h2 {
+      text-align: center;
+      font-size: 22px;
+      margin-top: 0;
+    }
+
+    .sensor-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+      font-size: 18px;
+    }
+
+    .sensor-row:last-child {
+      border-bottom: none;
     }
 
     button {
@@ -105,265 +132,821 @@
       color: #777;
       font-size: 14px;
       margin-top: 20px;
+      line-height: 1.5;
     }
+
   </style>
 </head>
+
 
 <body>
 
 <div class="app">
 
-  <h1>🚗 Tesla GPS Test</h1>
+  <h1>🚗 Tesla Sensor Test</h1>
 
-  <div id="status">Bereit</div>
+  <div id="status">
+    Bereit
+  </div>
 
-  <div id="speed">0.0</div>
-  <div class="unit">km/h</div>
+
+  <!-- GPS Geschwindigkeit -->
+
+  <div class="speed" id="speed">
+    0.0
+  </div>
+
+  <div class="unit">
+    km/h
+  </div>
+
+
+  <!-- GPS Werte -->
 
   <div class="grid">
 
     <div class="card">
-      <div class="label">Beschleunigung</div>
-      <div class="value" id="accel">0.00 m/s²</div>
+
+      <div class="label">
+        GPS Beschleunigung
+      </div>
+
+      <div class="value" id="gpsAccel">
+        0.00 m/s²
+      </div>
+
     </div>
 
-    <div class="card">
-      <div class="label">G-Wert</div>
-      <div class="value" id="g">0.00 G</div>
-    </div>
 
     <div class="card">
-      <div class="label">GPS Genauigkeit</div>
-      <div class="value" id="accuracy">— m</div>
+
+      <div class="label">
+        GPS G-Wert
+      </div>
+
+      <div class="value" id="gpsG">
+        0.00 G
+      </div>
+
     </div>
 
+
     <div class="card">
-      <div class="label">GPS Geschwindigkeit</div>
-      <div class="value" id="gpsSpeed">—</div>
+
+      <div class="label">
+        GPS Genauigkeit
+      </div>
+
+      <div class="value" id="accuracy">
+        —
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="label">
+        GPS Status
+      </div>
+
+      <div class="value" id="gpsStatus">
+        —
+      </div>
+
     </div>
 
   </div>
 
-  <div id="state">Warten</div>
+
+  <!-- Fahrzustand -->
+
+  <div class="state" id="state">
+    Warten
+  </div>
+
+
+  <!-- DeviceMotion -->
+
+  <div class="sensor">
+
+    <h2>
+      📱 DeviceMotion Sensor
+    </h2>
+
+
+    <div class="sensor-row">
+
+      <span>
+        Sensor verfügbar
+      </span>
+
+      <strong id="motionAvailable">
+        NEIN
+      </strong>
+
+    </div>
+
+
+    <div class="sensor-row">
+
+      <span>
+        X
+      </span>
+
+      <strong id="motionX">
+        —
+      </strong>
+
+    </div>
+
+
+    <div class="sensor-row">
+
+      <span>
+        Y
+      </span>
+
+      <strong id="motionY">
+        —
+      </strong>
+
+    </div>
+
+
+    <div class="sensor-row">
+
+      <span>
+        Z
+      </span>
+
+      <strong id="motionZ">
+        —
+      </strong>
+
+    </div>
+
+
+    <div class="sensor-row">
+
+      <span>
+        Bewegung
+      </span>
+
+      <strong id="motionStatus">
+        Keine Daten
+      </strong>
+
+    </div>
+
+  </div>
+
+
+  <!-- Buttons -->
 
   <button id="start">
-    📍 GPS STARTEN
+    📍 GPS + SENSOR STARTEN
   </button>
+
 
   <button id="stop" disabled>
     ⏹ STOPPEN
   </button>
 
+
   <div class="info">
-    Die Beschleunigung wird aus den GPS-Geschwindigkeitswerten
-    berechnet. Die Werte dienen nur zum Testen.
+
+    Diese Seite testet ausschließlich Browser-Sensoren.
+    Es werden keine Tesla-API-Daten verwendet.
+
   </div>
 
 </div>
 
+
 <script>
 
+
+/* =====================================================
+   GRUNDWERTE
+   ===================================================== */
+
 let watchId = null;
+
 let lastSpeed = null;
 let lastTime = null;
-let filteredAccel = 0;
+
+let filteredGpsAccel = 0;
 
 const alpha = 0.25;
+
 const G = 9.80665;
 
-const speedEl = document.getElementById("speed");
-const accelEl = document.getElementById("accel");
-const gEl = document.getElementById("g");
-const accuracyEl = document.getElementById("accuracy");
-const gpsSpeedEl = document.getElementById("gpsSpeed");
-const stateEl = document.getElementById("state");
-const statusEl = document.getElementById("status");
 
-const startBtn = document.getElementById("start");
-const stopBtn = document.getElementById("stop");
+/* =====================================================
+   HTML ELEMENTE
+   ===================================================== */
 
+const speedEl =
+  document.getElementById("speed");
+
+const gpsAccelEl =
+  document.getElementById("gpsAccel");
+
+const gpsGEl =
+  document.getElementById("gpsG");
+
+const accuracyEl =
+  document.getElementById("accuracy");
+
+const gpsStatusEl =
+  document.getElementById("gpsStatus");
+
+const stateEl =
+  document.getElementById("state");
+
+const statusEl =
+  document.getElementById("status");
+
+
+const motionAvailableEl =
+  document.getElementById("motionAvailable");
+
+const motionXEl =
+  document.getElementById("motionX");
+
+const motionYEl =
+  document.getElementById("motionY");
+
+const motionZEl =
+  document.getElementById("motionZ");
+
+const motionStatusEl =
+  document.getElementById("motionStatus");
+
+
+const startButton =
+  document.getElementById("start");
+
+const stopButton =
+  document.getElementById("stop");
+
+
+/* =====================================================
+   RESET
+   ===================================================== */
 
 function resetValues() {
 
   speedEl.textContent = "0.0";
-  accelEl.textContent = "0.00 m/s²";
-  gEl.textContent = "0.00 G";
-  accuracyEl.textContent = "— m";
-  gpsSpeedEl.textContent = "—";
 
-  stateEl.textContent = "Warten";
+  gpsAccelEl.textContent =
+    "0.00 m/s²";
+
+  gpsGEl.textContent =
+    "0.00 G";
+
+  accuracyEl.textContent =
+    "—";
+
+  gpsStatusEl.textContent =
+    "—";
+
+  stateEl.textContent =
+    "Warten";
+
+  motionXEl.textContent =
+    "—";
+
+  motionYEl.textContent =
+    "—";
+
+  motionZEl.textContent =
+    "—";
+
+  motionStatusEl.textContent =
+    "Keine Daten";
+
 
   lastSpeed = null;
   lastTime = null;
-  filteredAccel = 0;
+
+  filteredGpsAccel = 0;
 }
 
 
+/* =====================================================
+   GPS POSITION
+   ===================================================== */
+
 function handlePosition(position) {
 
-  const now = position.timestamp || Date.now();
-  const coords = position.coords;
+  const coords =
+    position.coords;
 
-  let speed = coords.speed;
+  const now =
+    position.timestamp || Date.now();
+
+
+  /*
+   * Geschwindigkeit des GPS.
+   *
+   * Einheit:
+   * Meter pro Sekunde
+   */
+
+  let speed =
+    coords.speed;
+
+
+  /*
+   * Manche Browser liefern hier null.
+   */
 
   if (
     typeof speed !== "number" ||
     !Number.isFinite(speed)
   ) {
+
+    gpsStatusEl.textContent =
+      "keine Geschwindigkeit";
+
     statusEl.textContent =
-      "GPS aktiv – Geschwindigkeit nicht verfügbar";
+      "GPS aktiv";
 
     return;
   }
 
-  speed = Math.max(0, speed);
 
-  const kmh = speed * 3.6;
+  /*
+   * Negative Geschwindigkeit
+   * macht keinen Sinn.
+   */
 
-  speedEl.textContent = kmh.toFixed(1);
-  gpsSpeedEl.textContent = kmh.toFixed(1) + " km/h";
+  speed =
+    Math.max(0, speed);
 
 
-  if (typeof coords.accuracy === "number") {
+  /*
+   * m/s -> km/h
+   */
+
+  const kmh =
+    speed * 3.6;
+
+
+  speedEl.textContent =
+    kmh.toFixed(1);
+
+
+  gpsStatusEl.textContent =
+    "OK";
+
+
+  /*
+   * GPS Genauigkeit
+   */
+
+  if (
+    typeof coords.accuracy === "number"
+  ) {
 
     accuracyEl.textContent =
       coords.accuracy.toFixed(1) + " m";
   }
 
 
+  /* ===================================================
+     GPS BESCHLEUNIGUNG
+     =================================================== */
+
   if (
     lastSpeed !== null &&
     lastTime !== null
   ) {
 
-    const dt = (now - lastTime) / 1000;
+    const dt =
+      (now - lastTime) / 1000;
 
-    if (dt > 0 && dt < 5) {
 
-      const rawAccel =
+    /*
+     * Nur sinnvolle Zeitabstände verwenden.
+     */
+
+    if (
+      dt > 0 &&
+      dt < 5
+    ) {
+
+      /*
+       * Beschleunigung:
+       *
+       * a = Delta v / Delta t
+       */
+
+      const rawAcceleration =
         (speed - lastSpeed) / dt;
 
-      filteredAccel =
-        alpha * rawAccel +
-        (1 - alpha) * filteredAccel;
 
-      const g = filteredAccel / G;
+      /*
+       * GPS ist ziemlich verrauscht.
+       *
+       * Deshalb glätten wir.
+       */
 
-      accelEl.textContent =
-        filteredAccel.toFixed(2) +
+      filteredGpsAccel =
+        alpha * rawAcceleration +
+        (1 - alpha) *
+        filteredGpsAccel;
+
+
+      /*
+       * Beschleunigung anzeigen
+       */
+
+      gpsAccelEl.textContent =
+        filteredGpsAccel.toFixed(2) +
         " m/s²";
 
-      gEl.textContent =
-        g.toFixed(2) + " G";
+
+      /*
+       * G berechnen
+       */
+
+      const gpsG =
+        filteredGpsAccel / G;
 
 
-      if (g > 0.05) {
+      gpsGEl.textContent =
+        gpsG.toFixed(2) +
+        " G";
+
+
+      /*
+       * Fahrzustand
+       */
+
+      if (gpsG > 0.05) {
 
         stateEl.textContent =
           "🚀 BESCHLEUNIGEN";
 
-      } else if (g < -0.05) {
+      }
+
+      else if (gpsG < -0.05) {
 
         stateEl.textContent =
           "🛑 BREMSEN";
 
-      } else {
+      }
+
+      else {
 
         stateEl.textContent =
           "➡️ ROLLEN";
       }
+
     }
+
   }
 
 
-  lastSpeed = speed;
-  lastTime = now;
+  lastSpeed =
+    speed;
 
-  statusEl.textContent = "GPS aktiv";
+  lastTime =
+    now;
+
+
+  statusEl.textContent =
+    "GPS aktiv";
+
 }
 
 
-function handleError(error) {
+/* =====================================================
+   GPS FEHLER
+   ===================================================== */
 
-  let message = "GPS-Fehler";
+function handleGpsError(error) {
+
+  let message =
+    "GPS Fehler";
+
 
   if (error.code === 1) {
 
     message =
-      "Standortzugriff wurde nicht erlaubt";
+      "Standortzugriff verweigert";
 
-  } else if (error.code === 2) {
-
-    message =
-      "Standort konnte nicht ermittelt werden";
-
-  } else if (error.code === 3) {
-
-    message =
-      "GPS-Zeitüberschreitung";
   }
 
-  statusEl.textContent = message;
-  stateEl.textContent = "⚠️ FEHLER";
+  else if (error.code === 2) {
+
+    message =
+      "Standort nicht verfügbar";
+
+  }
+
+  else if (error.code === 3) {
+
+    message =
+      "GPS Zeitüberschreitung";
+  }
+
+
+  statusEl.textContent =
+    message;
+
+  gpsStatusEl.textContent =
+    "FEHLER";
+
 }
 
 
-startBtn.addEventListener("click", function() {
+/* =====================================================
+   DEVICE MOTION
+   ===================================================== */
 
-  if (!("geolocation" in navigator)) {
+function handleMotion(event) {
 
-    statusEl.textContent =
-      "Dieser Browser unterstützt kein GPS";
+  /*
+   * acceleration enthält normalerweise
+   * die Beschleunigung ohne Gravitation.
+   */
+
+  const acceleration =
+    event.acceleration;
+
+
+  /*
+   * Falls der Browser nur
+   * accelerationIncludingGravity liefert,
+   * verwenden wir diese als Fallback.
+   */
+
+  const accelerationWithGravity =
+    event.accelerationIncludingGravity;
+
+
+  let data =
+    acceleration;
+
+
+  if (!data) {
+
+    data =
+      accelerationWithGravity;
+  }
+
+
+  if (!data) {
+
+    motionStatusEl.textContent =
+      "Keine Daten";
 
     return;
   }
 
 
-  resetValues();
+  /*
+   * Sensor ist vorhanden!
+   */
 
-  statusEl.textContent =
-    "GPS wird gestartet …";
-
-
-  watchId =
-    navigator.geolocation.watchPosition(
-      handlePosition,
-      handleError,
-      {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 10000
-      }
-    );
+  motionAvailableEl.textContent =
+    "JA";
 
 
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
-});
+  /*
+   * X
+   */
 
+  if (
+    typeof data.x === "number"
+  ) {
 
-stopBtn.addEventListener("click", function() {
+    motionXEl.textContent =
+      data.x.toFixed(2) +
+      " m/s²";
 
-  if (watchId !== null) {
-
-    navigator.geolocation.clearWatch(
-      watchId
-    );
-
-    watchId = null;
   }
 
 
-  statusEl.textContent =
-    "GPS gestoppt";
+  /*
+   * Y
+   */
 
-  stateEl.textContent =
-    "Gestoppt";
+  if (
+    typeof data.y === "number"
+  ) {
+
+    motionYEl.textContent =
+      data.y.toFixed(2) +
+      " m/s²";
+
+  }
 
 
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-});
+  /*
+   * Z
+   */
+
+  if (
+    typeof data.z === "number"
+  ) {
+
+    motionZEl.textContent =
+      data.z.toFixed(2) +
+      " m/s²";
+
+  }
+
+
+  motionStatusEl.textContent =
+    "DATEN EMPFANGEN";
+
+}
+
+
+/* =====================================================
+   START
+   ===================================================== */
+
+startButton.addEventListener(
+  "click",
+  async function() {
+
+    resetValues();
+
+
+    /*
+     * GPS starten
+     */
+
+    if (
+      !("geolocation" in navigator)
+    ) {
+
+      statusEl.textContent =
+        "GPS wird nicht unterstützt";
+
+      return;
+    }
+
+
+    statusEl.textContent =
+      "GPS wird gestartet …";
+
+
+    watchId =
+      navigator.geolocation.watchPosition(
+        handlePosition,
+        handleGpsError,
+        {
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 10000
+        }
+      );
+
+
+    /*
+     * DeviceMotion starten
+     */
+
+    try {
+
+      /*
+       * Manche Browser verlangen
+       * eine explizite Berechtigung.
+       */
+
+      if (
+        typeof DeviceMotionEvent !==
+        "undefined" &&
+        typeof DeviceMotionEvent.requestPermission ===
+        "function"
+      ) {
+
+        const permission =
+          await DeviceMotionEvent.requestPermission();
+
+
+        if (
+          permission === "granted"
+        ) {
+
+          window.addEventListener(
+            "devicemotion",
+            handleMotion
+          );
+
+          motionAvailableEl.textContent =
+            "BEREIT";
+
+        }
+
+        else {
+
+          motionStatusEl.textContent =
+            "Berechtigung abgelehnt";
+
+        }
+
+      }
+
+      else if (
+        "DeviceMotionEvent" in window
+      ) {
+
+        /*
+         * Browser unterstützt DeviceMotion
+         * ohne separate Permission.
+         */
+
+        window.addEventListener(
+          "devicemotion",
+          handleMotion
+        );
+
+        motionAvailableEl.textContent =
+          "BEREIT";
+
+      }
+
+      else {
+
+        motionAvailableEl.textContent =
+          "NEIN";
+
+        motionStatusEl.textContent =
+          "Nicht unterstützt";
+      }
+
+    }
+
+    catch(error) {
+
+      motionAvailableEl.textContent =
+        "FEHLER";
+
+      motionStatusEl.textContent =
+        error.message || "Fehler";
+
+    }
+
+
+    startButton.disabled =
+      true;
+
+    stopButton.disabled =
+      false;
+
+  }
+);
+
+
+/* =====================================================
+   STOP
+   ===================================================== */
+
+stopButton.addEventListener(
+  "click",
+  function() {
+
+
+    if (watchId !== null) {
+
+      navigator.geolocation.clearWatch(
+        watchId
+      );
+
+      watchId = null;
+    }
+
+
+    window.removeEventListener(
+      "devicemotion",
+      handleMotion
+    );
+
+
+    statusEl.textContent =
+      "Gestoppt";
+
+    stateEl.textContent =
+      "Gestoppt";
+
+
+    startButton.disabled =
+      false;
+
+    stopButton.disabled =
+      true;
+
+  }
+);
+
 
 </script>
 
