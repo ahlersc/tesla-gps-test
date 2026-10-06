@@ -3,821 +3,653 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Tesla Virtual Engine</title>
+<title>Old American V8 GPS Sound</title>
 
 <style>
+    body {
+        background: #111;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
 
-* {
-  box-sizing: border-box;
-}
+    h1 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
 
-body {
-  margin: 0;
-  background: #111;
-  color: white;
-  font-family: Arial, sans-serif;
-  text-align: center;
-}
+    button {
+        font-size: 22px;
+        padding: 15px 30px;
+        margin: 10px;
+        border-radius: 10px;
+        border: none;
+        background: #c62828;
+        color: white;
+    }
 
-.app {
-  width: 92%;
-  max-width: 700px;
-  margin: auto;
-  padding: 25px 0 40px;
-}
+    button:active {
+        background: #8e0000;
+    }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
+    .box {
+        max-width: 600px;
+        margin: auto;
+        background: #1c1c1c;
+        padding: 20px;
+        border-radius: 15px;
+    }
 
-.status {
-  color: #aaa;
-  font-size: 18px;
-  margin-bottom: 25px;
-}
+    .value {
+        font-size: 32px;
+        margin: 12px 0;
+    }
 
-.speed {
-  font-size: 90px;
-  font-weight: bold;
-  line-height: 1;
-}
+    .small {
+        color: #aaa;
+        font-size: 16px;
+    }
 
-.unit {
-  font-size: 24px;
-  color: #aaa;
-  margin-bottom: 25px;
-}
-
-.card {
-  background: #222;
-  border-radius: 18px;
-  padding: 20px;
-  margin-bottom: 12px;
-}
-
-.label {
-  color: #aaa;
-  font-size: 17px;
-}
-
-.value {
-  font-size: 38px;
-  font-weight: bold;
-  margin-top: 8px;
-}
-
-button {
-  width: 100%;
-  border: none;
-  border-radius: 16px;
-  padding: 20px;
-  margin-top: 10px;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-#start {
-  background: white;
-  color: black;
-}
-
-#stop {
-  background: #444;
-  color: white;
-}
-
-.info {
-  color: #777;
-  font-size: 14px;
-  margin-top: 20px;
-  line-height: 1.5;
-}
-
+    #status {
+        margin-top: 15px;
+        color: #0f0;
+    }
 </style>
 </head>
 
-
 <body>
 
-<div class="app">
+<div class="box">
 
-<h1>🏎️ Tesla Virtual Engine</h1>
+    <h1>🇺🇸 Old American V8</h1>
 
-<div class="status" id="status">
-Bereit
-</div>
+    <button id="startButton">
+        🔊 V8 STARTEN
+    </button>
 
-<div class="speed" id="speed">
-0
-</div>
+    <div class="value">
+        Geschwindigkeit:
+        <span id="speed">0</span> km/h
+    </div>
 
-<div class="unit">
-km/h
-</div>
+    <div class="value">
+        Drehzahl:
+        <span id="rpm">800</span> RPM
+    </div>
 
-<div class="card">
+    <div class="value">
+        Last:
+        <span id="load">0</span> %
+    </div>
 
-<div class="label">
-Virtuelle Drehzahl
-</div>
+    <div class="small">
+        Beschleunigung:
+        <span id="accel">0</span> m/s²
+    </div>
 
-<div class="value" id="rpm">
-800 RPM
-</div>
+    <div class="small">
+        GPS Genauigkeit:
+        <span id="accuracy">---</span> m
+    </div>
 
-</div>
-
-<div class="card">
-
-<div class="label">
-Motorlast
-</div>
-
-<div class="value" id="load">
-0 %
-</div>
-
-</div>
-
-<button id="start">
-🔊 MOTOR STARTEN
-</button>
-
-<button id="stop" disabled>
-⏹ STOPPEN
-</button>
-
-<div class="info">
-
-Virtueller Mehrzylinder-Motorsound.
-Die Drehzahl wird aus der GPS-Geschwindigkeit
-berechnet.
+    <div id="status">
+        Warte auf GPS...
+    </div>
 
 </div>
-
-</div>
-
 
 <script>
 
-
-/* =====================================================
-   GPS
-   ===================================================== */
-
-let watchId = null;
+////////////////////////////////////////////////////////////
+// GPS
+////////////////////////////////////////////////////////////
 
 let currentSpeed = 0;
-let targetSpeed = 0;
-
-let lastSpeed = null;
-let lastTime = null;
+let previousSpeed = null;
+let previousTime = null;
 
 let acceleration = 0;
+let smoothAcceleration = 0;
+
+navigator.geolocation.watchPosition(
+
+    function(position) {
+
+        const coords = position.coords;
+
+        let speedMS = coords.speed;
+
+        // Manche Geräte liefern null.
+        // Dann berechnen wir Geschwindigkeit aus Positionsänderung
+        // nicht direkt, sondern lassen den letzten Wert stehen.
+        if (speedMS == null || isNaN(speedMS)) {
+            speedMS = currentSpeed / 3.6;
+        }
+
+        const speedKMH = Math.max(0, speedMS * 3.6);
+
+        const now = performance.now();
+
+        ////////////////////////////////////////////////////////
+        // Beschleunigung
+        ////////////////////////////////////////////////////////
+
+        if (previousSpeed !== null && previousTime !== null) {
+
+            const dt = (now - previousTime) / 1000;
+
+            if (dt > 0.05 && dt < 5) {
+
+                acceleration =
+                    (speedMS - previousSpeed) / dt;
+
+                // GPS kann stark rauschen.
+                // Deshalb glätten wir die Beschleunigung.
+                smoothAcceleration =
+                    smoothAcceleration * 0.80 +
+                    acceleration * 0.20;
+            }
+        }
+
+        previousSpeed = speedMS;
+        previousTime = now;
+
+        currentSpeed = speedKMH;
+
+        ////////////////////////////////////////////////////////
+        // Anzeige
+        ////////////////////////////////////////////////////////
+
+        document.getElementById("speed").textContent =
+            speedKMH.toFixed(1);
+
+        document.getElementById("accel").textContent =
+            smoothAcceleration.toFixed(2);
+
+        document.getElementById("accuracy").textContent =
+            coords.accuracy
+                ? coords.accuracy.toFixed(0)
+                : "---";
+
+        updateEngine();
+
+    },
+
+    function(error) {
+
+        document.getElementById("status").textContent =
+            "GPS Fehler: " + error.message;
+
+    },
+
+    {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+    }
+);
 
 
-/* =====================================================
-   AUDIO
-   ===================================================== */
+////////////////////////////////////////////////////////////
+// AUDIO
+////////////////////////////////////////////////////////////
 
 let audioContext = null;
 
 let masterGain = null;
+let exhaustGain = null;
+let rumbleGain = null;
+let intakeGain = null;
 
-let lowOsc = null;
-let midOsc = null;
-let highOsc = null;
+let filter = null;
 
-let lowGain = null;
-let midGain = null;
-let highGain = null;
+let engineRunning = false;
 
-let engineFilter = null;
+////////////////////////////////////////////////////////////
+// V8 PARAMETER
+////////////////////////////////////////////////////////////
 
-let engineStarted = false;
+let targetRPM = 800;
+let engineRPM = 800;
 
+let targetLoad = 0;
+let engineLoad = 0;
 
-/* =====================================================
-   HTML
-   ===================================================== */
+////////////////////////////////////////////////////////////
+// V8 AUDIO
+////////////////////////////////////////////////////////////
 
-const speedElement =
-  document.getElementById("speed");
+function startEngine() {
 
-const rpmElement =
-  document.getElementById("rpm");
+    if (engineRunning) {
+        return;
+    }
 
-const loadElement =
-  document.getElementById("load");
+    audioContext =
+        new (window.AudioContext || window.webkitAudioContext)();
 
-const statusElement =
-  document.getElementById("status");
+    ////////////////////////////////////////////////////////////
+    // Master
+    ////////////////////////////////////////////////////////////
 
-const startButton =
-  document.getElementById("start");
+    masterGain =
+        audioContext.createGain();
 
-const stopButton =
-  document.getElementById("stop");
+    masterGain.gain.value = 0.0;
 
+    masterGain.connect(audioContext.destination);
 
-/* =====================================================
-   MOTOR SOUND INITIALISIEREN
-   ===================================================== */
 
-function startEngineSound() {
+    ////////////////////////////////////////////////////////////
+    // Tiefes Auspuff-/Motorgeräusch
+    ////////////////////////////////////////////////////////////
 
-  if (engineStarted) {
-    return;
-  }
+    rumbleGain =
+        audioContext.createGain();
 
+    rumbleGain.gain.value = 0.5;
 
-  audioContext =
-    new (window.AudioContext ||
-    window.webkitAudioContext)();
+    rumbleGain.connect(masterGain);
 
 
-  /*
-   * Master-Lautstärke
-   */
+    ////////////////////////////////////////////////////////////
+    // Exhaust
+    ////////////////////////////////////////////////////////////
 
-  masterGain =
-    audioContext.createGain();
+    exhaustGain =
+        audioContext.createGain();
 
-  masterGain.gain.value =
-    0.06;
+    exhaustGain.gain.value = 0.6;
 
+    exhaustGain.connect(masterGain);
 
-  /*
-   * Filter
-   */
 
-  engineFilter =
-    audioContext.createBiquadFilter();
+    ////////////////////////////////////////////////////////////
+    // Intake
+    ////////////////////////////////////////////////////////////
 
-  engineFilter.type =
-    "lowpass";
+    intakeGain =
+        audioContext.createGain();
 
-  engineFilter.frequency.value =
-    1200;
+    intakeGain.gain.value = 0.0;
 
-  engineFilter.Q.value =
-    1.2;
+    intakeGain.connect(masterGain);
 
 
-  /*
-   * ===============================================
-   * TIEFER MOTOR
-   * ===============================================
-   */
+    ////////////////////////////////////////////////////////////
+    // Low Pass
+    ////////////////////////////////////////////////////////////
 
-  lowOsc =
-    audioContext.createOscillator();
+    filter =
+        audioContext.createBiquadFilter();
 
-  lowGain =
-    audioContext.createGain();
+    filter.type = "lowpass";
 
+    filter.frequency.value = 700;
 
-  lowOsc.type =
-    "sawtooth";
+    filter.Q.value = 1.0;
 
-  lowGain.gain.value =
-    0.7;
+    filter.connect(exhaustGain);
 
 
-  /*
-   * ===============================================
-   * MITTLERER MOTORANTEIL
-   * ===============================================
-   */
+    ////////////////////////////////////////////////////////////
+    // Grundfrequenzen
+    ////////////////////////////////////////////////////////////
 
-  midOsc =
-    audioContext.createOscillator();
-
-  midGain =
-    audioContext.createGain();
-
-
-  midOsc.type =
-    "triangle";
-
-  midGain.gain.value =
-    0.35;
-
-
-  /*
-   * ===============================================
-   * HOCHFREQUENTER ANTEIL
-   * ===============================================
-   */
-
-  highOsc =
-    audioContext.createOscillator();
-
-  highGain =
-    audioContext.createGain();
-
-
-  highOsc.type =
-    "square";
-
-  highGain.gain.value =
-    0.08;
-
-
-  /*
-   * AUDIO ROUTING
-   */
-
-  lowOsc.connect(
-    lowGain
-  );
-
-  midOsc.connect(
-    midGain
-  );
-
-  highOsc.connect(
-    highGain
-  );
-
-
-  lowGain.connect(
-    engineFilter
-  );
-
-  midGain.connect(
-    engineFilter
-  );
-
-  highGain.connect(
-    engineFilter
-  );
-
-
-  engineFilter.connect(
-    masterGain
-  );
-
-
-  masterGain.connect(
-    audioContext.destination
-  );
-
-
-  /*
-   * Start
-   */
-
-  lowOsc.start();
-  midOsc.start();
-  highOsc.start();
-
-
-  engineStarted = true;
-}
-
-
-/* =====================================================
-   ENGINE SOUND
-   ===================================================== */
-
-function updateEngineSound() {
-
-  if (
-    !engineStarted
-  ) {
-    return;
-  }
-
-
-  /*
-   * -----------------------------------------------
-   * VIRTUELLE DREHZAHL
-   * -----------------------------------------------
-   *
-   * 0 km/h     = 850 RPM
-   * 200 km/h   = 6500 RPM
-   */
-
-  let rpm =
-    850 +
-    (currentSpeed / 200) * 5650;
-
-
-  rpm =
-    Math.max(
-      850,
-      Math.min(
-        6500,
-        rpm
-      )
+    createEngineOscillator(
+        1,
+        "sawtooth",
+        rumbleGain
+    );
+
+    createEngineOscillator(
+        2,
+        "square",
+        filter
+    );
+
+    createEngineOscillator(
+        3,
+        "triangle",
+        filter
     );
 
 
-  /*
-   * -----------------------------------------------
-   * MOTORLAST
-   * -----------------------------------------------
-   */
+    engineRunning = true;
 
-  let load =
-    Math.abs(acceleration) * 25;
+    document.getElementById("status").textContent =
+        "🔥 V8 läuft";
 
+    audioContext.resume();
 
-  /*
-   * Grundlast bei höherer Geschwindigkeit
-   */
-
-  load +=
-    currentSpeed * 0.04;
-
-
-  load =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        load
-      )
-    );
-
-
-  /*
-   * -----------------------------------------------
-   * MOTORFREQUENZ
-   * -----------------------------------------------
-   *
-   * Ein echter Motor besteht aus vielen
-   * Oberwellen.
-   */
-
-  const base =
-    rpm / 60;
-
-
-  const fundamental =
-    base * 4;
-
-
-  /*
-   * Tiefer Grundton
-   */
-
-  lowOsc.frequency.setTargetAtTime(
-    fundamental,
-    audioContext.currentTime,
-    0.03
-  );
-
-
-  /*
-   * Mittlere Oberwelle
-   */
-
-  midOsc.frequency.setTargetAtTime(
-    fundamental * 2.01,
-    audioContext.currentTime,
-    0.03
-  );
-
-
-  /*
-   * Hohe Oberwelle
-   */
-
-  highOsc.frequency.setTargetAtTime(
-    fundamental * 4.02,
-    audioContext.currentTime,
-    0.03
-  );
-
-
-  /*
-   * -----------------------------------------------
-   * LAST -> LAUTSTÄRKE
-   * -----------------------------------------------
-   */
-
-  let volume =
-    0.045 +
-    (load / 100) * 0.11;
-
-
-  /*
-   * Standgas
-   */
-
-  if (
-    currentSpeed < 2
-  ) {
-
-    volume =
-      0.025;
-  }
-
-
-  /*
-   * -----------------------------------------------
-   * MOTORBREMSEN
-   * -----------------------------------------------
-   */
-
-  if (
-    acceleration < -0.5
-  ) {
-
-    volume *=
-      0.55;
-  }
-
-
-  masterGain.gain.setTargetAtTime(
-    volume,
-    audioContext.currentTime,
-    0.08
-  );
-
-
-  /*
-   * -----------------------------------------------
-   * FILTER
-   * -----------------------------------------------
-   *
-   * Bei höherer Drehzahl öffnet der Motor.
-   */
-
-  const filterFrequency =
-    650 +
-    (rpm / 6500) * 4000;
-
-
-  engineFilter.frequency.setTargetAtTime(
-    filterFrequency,
-    audioContext.currentTime,
-    0.06
-  );
-
-
-  /*
-   * -----------------------------------------------
-   * DISPLAY
-   * -----------------------------------------------
-   */
-
-  rpmElement.textContent =
-    Math.round(rpm) +
-    " RPM";
-
-
-  loadElement.textContent =
-    Math.round(load) +
-    " %";
+    engineLoop();
 }
 
 
-/* =====================================================
-   GPS
-   ===================================================== */
+////////////////////////////////////////////////////////////
+// ENGINE OSCILLATOR
+////////////////////////////////////////////////////////////
 
-function handlePosition(position) {
+function createEngineOscillator(
+    number,
+    type,
+    destination
+) {
 
-  const now =
-    position.timestamp ||
-    Date.now();
+    const osc =
+        audioContext.createOscillator();
 
+    const gain =
+        audioContext.createGain();
 
-  let speed =
-    position.coords.speed;
+    osc.type = type;
 
+    gain.gain.value = 0;
 
-  if (
-    typeof speed !== "number" ||
-    !Number.isFinite(speed)
-  ) {
+    osc.connect(gain);
+    gain.connect(destination);
 
-    statusElement.textContent =
-      "GPS aktiv – Geschwindigkeit fehlt";
+    osc.start();
 
-    return;
-  }
+    osc._gain = gain;
+    osc._type = type;
 
-
-  speed =
-    Math.max(
-      0,
-      speed
-    );
-
-
-  targetSpeed =
-    speed * 3.6;
-
-
-  /*
-   * Beschleunigung berechnen
-   */
-
-  if (
-    lastSpeed !== null &&
-    lastTime !== null
-  ) {
-
-    const dt =
-      (now - lastTime) / 1000;
-
-
-    if (
-      dt > 0 &&
-      dt < 5
-    ) {
-
-      const rawAcceleration =
-        (speed - lastSpeed) / dt;
-
-
-      /*
-       * Stärkere Glättung
-       */
-
-      acceleration =
-        acceleration * 0.80 +
-        rawAcceleration * 0.20;
+    if (number === 1) {
+        window.v8Osc1 = osc;
     }
-  }
 
+    if (number === 2) {
+        window.v8Osc2 = osc;
+    }
 
-  lastSpeed =
-    speed;
-
-  lastTime =
-    now;
-
-
-  speedElement.textContent =
-    targetSpeed.toFixed(1);
-
-
-  statusElement.textContent =
-    "GPS + Motor aktiv";
+    if (number === 3) {
+        window.v8Osc3 = osc;
+    }
 }
 
 
-/* =====================================================
-   GPS FEHLER
-   ===================================================== */
+////////////////////////////////////////////////////////////
+// ENGINE LOOP
+////////////////////////////////////////////////////////////
 
-function handleGpsError(error) {
+function engineLoop() {
 
-  if (
-    error.code === 1
-  ) {
+    if (!engineRunning) {
+        return;
+    }
 
-    statusElement.textContent =
-      "Standortzugriff verweigert";
+    ////////////////////////////////////////////////////////////
+    // RPM glätten
+    ////////////////////////////////////////////////////////////
 
-  }
-
-  else {
-
-    statusElement.textContent =
-      "GPS Fehler";
-  }
-}
+    engineRPM +=
+        (targetRPM - engineRPM) * 0.08;
 
 
-/* =====================================================
-   AUDIO LOOP
-   ===================================================== */
+    ////////////////////////////////////////////////////////////
+    // Last glätten
+    ////////////////////////////////////////////////////////////
 
-function audioLoop() {
-
-  /*
-   * Drehzahl nicht abrupt ändern.
-   */
-
-  currentSpeed +=
-    (targetSpeed - currentSpeed) *
-    0.06;
+    engineLoad +=
+        (targetLoad - engineLoad) * 0.08;
 
 
-  updateEngineSound();
+    ////////////////////////////////////////////////////////////
+    // Kurbelwellenfrequenz
+    //
+    // 4-Takt V8:
+    //
+    // 8 Zündungen pro 2 Umdrehungen
+    //
+    // firing frequency =
+    // RPM * 8 / 120
+    //
+    ////////////////////////////////////////////////////////////
+
+    const firingFrequency =
+        engineRPM / 15;
 
 
-  requestAnimationFrame(
-    audioLoop
-  );
-}
+    ////////////////////////////////////////////////////////////
+    // Grundfrequenz
+    ////////////////////////////////////////////////////////////
+
+    const baseFrequency =
+        firingFrequency;
 
 
-/* =====================================================
-   START
-   ===================================================== */
+    ////////////////////////////////////////////////////////////
+    // V8 Charakter
+    ////////////////////////////////////////////////////////////
 
-startButton.addEventListener(
-  "click",
-  async function() {
+    if (window.v8Osc1) {
 
+        window.v8Osc1.frequency.setTargetAtTime(
+            baseFrequency * 0.50,
+            audioContext.currentTime,
+            0.03
+        );
 
-    startEngineSound();
-
-
-    if (
-      audioContext.state ===
-      "suspended"
-    ) {
-
-      await audioContext.resume();
+        window.v8Osc1._gain.gain.setTargetAtTime(
+            0.22 + engineLoad * 0.18,
+            audioContext.currentTime,
+            0.03
+        );
     }
 
 
-    if (
-      !("geolocation" in navigator)
-    ) {
+    if (window.v8Osc2) {
 
-      statusElement.textContent =
-        "GPS nicht verfügbar";
+        window.v8Osc2.frequency.setTargetAtTime(
+            baseFrequency * 1.0,
+            audioContext.currentTime,
+            0.03
+        );
 
-      return;
+        window.v8Osc2._gain.gain.setTargetAtTime(
+            0.04 + engineLoad * 0.10,
+            audioContext.currentTime,
+            0.03
+        );
     }
 
 
-    watchId =
-      navigator.geolocation.watchPosition(
-        handlePosition,
-        handleGpsError,
-        {
-          enableHighAccuracy: true,
-          maximumAge: 1000,
-          timeout: 10000
-        }
-      );
+    if (window.v8Osc3) {
 
+        window.v8Osc3.frequency.setTargetAtTime(
+            baseFrequency * 2.0,
+            audioContext.currentTime,
+            0.03
+        );
 
-    startButton.disabled =
-      true;
-
-    stopButton.disabled =
-      false;
-
-
-    statusElement.textContent =
-      "Motor + GPS aktiv";
-
-
-    audioLoop();
-
-  }
-);
-
-
-/* =====================================================
-   STOP
-   ===================================================== */
-
-stopButton.addEventListener(
-  "click",
-  function() {
-
-
-    if (
-      watchId !== null
-    ) {
-
-      navigator.geolocation.clearWatch(
-        watchId
-      );
-
-      watchId = null;
+        window.v8Osc3._gain.gain.setTargetAtTime(
+            0.02 + engineLoad * 0.08,
+            audioContext.currentTime,
+            0.03
+        );
     }
 
 
-    if (
-      masterGain &&
-      audioContext
-    ) {
+    ////////////////////////////////////////////////////////////
+    // Filter
+    ////////////////////////////////////////////////////////////
 
-      masterGain.gain.setTargetAtTime(
-        0.0001,
+    if (filter) {
+
+        const filterFrequency =
+            300 +
+            engineRPM * 0.18 +
+            engineLoad * 900;
+
+        filter.frequency.setTargetAtTime(
+            Math.min(5000, filterFrequency),
+            audioContext.currentTime,
+            0.05
+        );
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // Hauptlautstärke
+    ////////////////////////////////////////////////////////////
+
+    let volume =
+        0.35 +
+        engineLoad * 0.30;
+
+    // Im Stand nicht zu laut
+    if (engineRPM < 1000) {
+        volume *= 0.75;
+    }
+
+    masterGain.gain.setTargetAtTime(
+        volume,
         audioContext.currentTime,
-        0.12
-      );
+        0.05
+    );
+
+
+    ////////////////////////////////////////////////////////////
+    // Nächsten Zyklus planen
+    ////////////////////////////////////////////////////////////
+
+    setTimeout(engineLoop, 30);
+}
+
+
+////////////////////////////////////////////////////////////
+// ENGINE MODEL
+////////////////////////////////////////////////////////////
+
+function updateEngine() {
+
+    ////////////////////////////////////////////////////////////
+    // Geschwindigkeit
+    ////////////////////////////////////////////////////////////
+
+    const speed =
+        currentSpeed;
+
+
+    ////////////////////////////////////////////////////////////
+    // Drehzahl aus Geschwindigkeit
+    //
+    // 0 km/h   = ~800 RPM
+    // 10 km/h  = ~1100 RPM
+    // 50 km/h  = ~2200 RPM
+    // 100 km/h = ~3700 RPM
+    // 200 km/h = ~6000 RPM
+    //
+    ////////////////////////////////////////////////////////////
+
+    let rpm =
+        800 +
+        speed * 26;
+
+
+    ////////////////////////////////////////////////////////////
+    // Bei höherer Beschleunigung etwas mehr Drehzahl
+    ////////////////////////////////////////////////////////////
+
+    if (smoothAcceleration > 0.2) {
+
+        rpm +=
+            smoothAcceleration * 350;
     }
 
 
-    statusElement.textContent =
-      "Gestoppt";
+    ////////////////////////////////////////////////////////////
+    // Begrenzen
+    ////////////////////////////////////////////////////////////
+
+    rpm =
+        Math.max(750, rpm);
+
+    rpm =
+        Math.min(6500, rpm);
 
 
-    startButton.disabled =
-      false;
+    targetRPM = rpm;
 
-    stopButton.disabled =
-      true;
 
-  }
-);
+    ////////////////////////////////////////////////////////////
+    // LAST
+    ////////////////////////////////////////////////////////////
+
+    // Beschleunigung positiv =
+    // Fahrer gibt virtuell Gas
+
+    let load =
+        Math.max(
+            0,
+            smoothAcceleration / 2.5
+        );
+
+
+    ////////////////////////////////////////////////////////////
+    // Bei höherem Tempo etwas Grundlast
+    ////////////////////////////////////////////////////////////
+
+    if (speed > 10) {
+
+        load +=
+            Math.min(
+                0.35,
+                speed / 300
+            );
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // Bei Stillstand fast keine Last
+    ////////////////////////////////////////////////////////////
+
+    if (speed < 2) {
+        load *= 0.15;
+    }
+
+
+    load =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                load
+            )
+        );
+
+
+    targetLoad = load;
+
+
+    ////////////////////////////////////////////////////////////
+    // Anzeige
+    ////////////////////////////////////////////////////////////
+
+    document.getElementById("rpm").textContent =
+        Math.round(engineRPM);
+
+    document.getElementById("load").textContent =
+        Math.round(engineLoad * 100);
+}
+
+
+////////////////////////////////////////////////////////////
+// START BUTTON
+////////////////////////////////////////////////////////////
+
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        function() {
+
+            startEngine();
+
+        }
+    );
 
 </script>
 
