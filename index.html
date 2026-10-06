@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Old American V8 Simulator</title>
+<title>Old American V8</title>
 
 <style>
 
@@ -66,7 +66,7 @@ h1 {
 
 .speed-display {
     text-align: center;
-    margin: 20px 0;
+    margin: 15px 0 25px;
 }
 
 .speed-number {
@@ -79,10 +79,13 @@ h1 {
     font-size: 20px;
 }
 
-input[type="range"] {
+#speedSlider {
+    display: block;
     width: 100%;
     height: 45px;
-    accent-color: #d32f2f;
+    margin: 10px 0;
+    accent-color: #e53935;
+    cursor: pointer;
 }
 
 .range-labels {
@@ -90,12 +93,6 @@ input[type="range"] {
     justify-content: space-between;
     color: #777;
     font-size: 13px;
-}
-
-.gps-info {
-    text-align: center;
-    color: #aaa;
-    margin-top: 12px;
 }
 
 .data {
@@ -134,10 +131,6 @@ input[type="range"] {
     cursor: pointer;
 }
 
-.start-button:active {
-    background: #8e0000;
-}
-
 .status {
     text-align: center;
     margin-top: 15px;
@@ -156,6 +149,12 @@ input[type="range"] {
 .engine-light.running {
     background: #ff3b30;
     box-shadow: 0 0 12px #ff3b30;
+}
+
+.gps-info {
+    text-align: center;
+    color: #aaa;
+    margin-top: 15px;
 }
 
 .hidden {
@@ -180,8 +179,8 @@ input[type="range"] {
 
 <div class="panel">
 
-    <div style="text-align:center;margin-bottom:15px;color:#aaa;">
-        GESCHWINDIGKEITSQUELLE
+    <div style="text-align:center;color:#aaa;margin-bottom:15px;">
+        GESCHWINDIGKEIT
     </div>
 
     <div class="mode-buttons">
@@ -189,7 +188,7 @@ input[type="range"] {
         <button
             id="simulationButton"
             class="mode-button active">
-            🎚️ Simulation
+            🎚️ SCHIEBEREGLER
         </button>
 
         <button
@@ -220,8 +219,6 @@ input[type="range"] {
     </div>
 
 
-    <!-- SIMULATION SLIDER -->
-
     <div id="simulationControl">
 
         <input
@@ -230,7 +227,8 @@ input[type="range"] {
             min="0"
             max="200"
             step="1"
-            value="0">
+            value="0"
+        >
 
         <div class="range-labels">
             <span>0</span>
@@ -243,13 +241,12 @@ input[type="range"] {
     </div>
 
 
-    <!-- GPS INFO -->
-
     <div
         id="gpsInfo"
         class="gps-info hidden">
 
-        GPS wird verwendet
+        GPS Geschwindigkeit:
+        <span id="gpsSpeed">0</span> km/h
 
         <br>
 
@@ -261,7 +258,7 @@ input[type="range"] {
 </div>
 
 
-<!-- ENGINE DATA -->
+<!-- MOTOR -->
 
 <div class="panel">
 
@@ -274,9 +271,7 @@ input[type="range"] {
             </div>
 
             <div class="value">
-                <span id="rpmValue">
-                    750
-                </span>
+                <span id="rpmValue">750</span>
                 <span style="font-size:13px;color:#777;">
                     RPM
                 </span>
@@ -292,9 +287,7 @@ input[type="range"] {
             </div>
 
             <div class="value">
-                <span id="loadValue">
-                    5
-                </span>
+                <span id="loadValue">5</span>
                 <span style="font-size:13px;color:#777;">
                     %
                 </span>
@@ -351,15 +344,15 @@ let mode = "simulation";
 // SPEED
 ////////////////////////////////////////////////////////////
 
-let simulatedSpeed = 0;
+let requestedSpeed = 0;
+
+let actualSpeed = 0;
 
 let gpsSpeed = 0;
 
-let currentSpeed = 0;
+let previousActualSpeed = 0;
 
-let previousSpeed = 0;
-
-let speedChange = 0;
+let speedAcceleration = 0;
 
 
 ////////////////////////////////////////////////////////////
@@ -383,37 +376,30 @@ let audioContext = null;
 
 let masterGain = null;
 
-let filter = null;
-
 let rumbleGain = null;
 
 let exhaustGain = null;
 
 let aggressiveGain = null;
 
-let oscillator1 = null;
+let filter = null;
 
-let oscillator2 = null;
+let osc1 = null;
 
-let oscillator3 = null;
+let osc2 = null;
 
-let oscillator4 = null;
+let osc3 = null;
+
+let osc4 = null;
 
 let engineRunning = false;
 
 
 ////////////////////////////////////////////////////////////
-// GPS
+// ELEMENTS
 ////////////////////////////////////////////////////////////
 
-let gpsStarted = false;
-
-
-////////////////////////////////////////////////////////////
-// DOM
-////////////////////////////////////////////////////////////
-
-const speedSlider =
+const slider =
     document.getElementById(
         "speedSlider"
     );
@@ -440,7 +426,22 @@ const gpsInfo =
 
 
 ////////////////////////////////////////////////////////////
-// MODE: SIMULATION
+// SLIDER
+////////////////////////////////////////////////////////////
+
+slider.addEventListener(
+    "input",
+    function() {
+
+        requestedSpeed =
+            Number(slider.value);
+
+    }
+);
+
+
+////////////////////////////////////////////////////////////
+// SIMULATION BUTTON
 ////////////////////////////////////////////////////////////
 
 simulationButton.addEventListener(
@@ -465,16 +466,15 @@ simulationButton.addEventListener(
             "hidden"
         );
 
-        currentSpeed =
-            simulatedSpeed;
+        requestedSpeed =
+            Number(slider.value);
 
-        updateEngineModel();
     }
 );
 
 
 ////////////////////////////////////////////////////////////
-// MODE: GPS
+// GPS BUTTON
 ////////////////////////////////////////////////////////////
 
 gpsButton.addEventListener(
@@ -501,52 +501,15 @@ gpsButton.addEventListener(
 
         startGPS();
 
-        currentSpeed =
-            gpsSpeed;
-
-        updateEngineModel();
     }
 );
 
 
 ////////////////////////////////////////////////////////////
-// SIMULATION SLIDER
+// GPS
 ////////////////////////////////////////////////////////////
 
-speedSlider.addEventListener(
-    "input",
-    function() {
-
-        const newSpeed =
-            Number(
-                speedSlider.value
-            );
-
-
-        speedChange =
-            newSpeed -
-            simulatedSpeed;
-
-
-        simulatedSpeed =
-            newSpeed;
-
-
-        if (mode === "simulation") {
-
-            currentSpeed =
-                simulatedSpeed;
-
-            updateEngineModel();
-        }
-
-    }
-);
-
-
-////////////////////////////////////////////////////////////
-// GPS START
-////////////////////////////////////////////////////////////
+let gpsStarted = false;
 
 function startGPS() {
 
@@ -559,11 +522,10 @@ function startGPS() {
         document.getElementById(
             "statusText"
         ).textContent =
-            "GPS wird vom Browser nicht unterstützt";
+            "GPS nicht verfügbar";
 
         return;
     }
-
 
     gpsStarted = true;
 
@@ -576,16 +538,13 @@ function startGPS() {
                 position.coords.speed;
 
 
-            ////////////////////////////////////////////////////
-            // Falls speed nicht verfügbar
-            ////////////////////////////////////////////////////
-
             if (
                 speed === null ||
                 isNaN(speed)
             ) {
 
-                speed = gpsSpeed / 3.6;
+                speed = 0;
+
             }
 
 
@@ -597,20 +556,17 @@ function startGPS() {
 
 
             document.getElementById(
+                "gpsSpeed"
+            ).textContent =
+                gpsSpeed.toFixed(1);
+
+
+            document.getElementById(
                 "gpsAccuracy"
             ).textContent =
                 position.coords.accuracy
                     ? position.coords.accuracy.toFixed(0)
                     : "---";
-
-
-            if (mode === "gps") {
-
-                currentSpeed =
-                    gpsSpeed;
-
-                updateEngineModel();
-            }
 
         },
 
@@ -625,86 +581,46 @@ function startGPS() {
         },
 
         {
-
             enableHighAccuracy: true,
-
             maximumAge: 500,
-
             timeout: 10000
-
         }
+
     );
 }
 
 
 ////////////////////////////////////////////////////////////
-// SPEED → RPM
+// REALISTISCHE RPM KURVE
 ////////////////////////////////////////////////////////////
 
 function calculateRPM(speed) {
 
-    ////////////////////////////////////////////////////////////
-    // Nicht linear!
-    ////////////////////////////////////////////////////////////
-
     const points = [
 
         [0,   750],
-
         [5,   800],
-
         [10,  950],
-
         [20,  1200],
-
         [30,  1500],
-
         [40,  1750],
-
         [60,  2250],
-
         [80,  2800],
-
         [100, 3350],
-
         [120, 3900],
-
         [150, 4700],
-
         [180, 5400],
-
         [200, 6000]
 
     ];
 
 
-    ////////////////////////////////////////////////////////////
-    // Unterhalb erster Punkt
-    ////////////////////////////////////////////////////////////
+    if (speed <= 0) {
 
-    if (speed <= points[0][0]) {
+        return 750;
 
-        return points[0][1];
     }
 
-
-    ////////////////////////////////////////////////////////////
-    // Oberhalb letzter Punkt
-    ////////////////////////////////////////////////////////////
-
-    if (
-        speed >=
-        points[points.length - 1][0]
-    ) {
-
-        return
-            points[points.length - 1][1];
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    // Zwischenpunkte interpolieren
-    ////////////////////////////////////////////////////////////
 
     for (
         let i = 0;
@@ -712,57 +628,84 @@ function calculateRPM(speed) {
         i++
     ) {
 
-        const p1 = points[i];
+        const a =
+            points[i];
 
-        const p2 = points[i + 1];
+        const b =
+            points[i + 1];
 
 
         if (
-            speed >= p1[0] &&
-            speed <= p2[0]
+            speed >= a[0] &&
+            speed <= b[0]
         ) {
 
-            const ratio =
-                (speed - p1[0]) /
-                (p2[0] - p1[0]);
+            const t =
+                (speed - a[0]) /
+                (b[0] - a[0]);
 
 
-            return
-                p1[1] +
-                (
-                    p2[1] -
-                    p1[1]
-                ) *
-                ratio;
+            return (
+                a[1] +
+                (b[1] - a[1]) * t
+            );
+
         }
+
     }
 
 
-    return 750;
+    return 6000;
 }
 
 
 ////////////////////////////////////////////////////////////
-// ENGINE MODEL
+// MOTOR MODEL
 ////////////////////////////////////////////////////////////
 
 function updateEngineModel() {
 
-    const speed =
-        currentSpeed;
+    ////////////////////////////////////////////////////////////
+    // Geschwindigkeit auswählen
+    ////////////////////////////////////////////////////////////
+
+    let desiredSpeed;
+
+    if (mode === "simulation") {
+
+        desiredSpeed =
+            requestedSpeed;
+
+    } else {
+
+        desiredSpeed =
+            gpsSpeed;
+
+    }
 
 
     ////////////////////////////////////////////////////////////
-    // Geschwindigkeit ändern
+    // Geschwindigkeit folgt Zielwert
     ////////////////////////////////////////////////////////////
 
-    const delta =
-        speed -
-        previousSpeed;
+    actualSpeed +=
+        (
+            desiredSpeed -
+            actualSpeed
+        ) * 0.18;
 
 
-    previousSpeed =
-        speed;
+    ////////////////////////////////////////////////////////////
+    // Beschleunigung
+    ////////////////////////////////////////////////////////////
+
+    speedAcceleration =
+        actualSpeed -
+        previousActualSpeed;
+
+
+    previousActualSpeed =
+        actualSpeed;
 
 
     ////////////////////////////////////////////////////////////
@@ -770,84 +713,75 @@ function updateEngineModel() {
     ////////////////////////////////////////////////////////////
 
     let rpm =
-        calculateRPM(speed);
+        calculateRPM(actualSpeed);
 
 
     ////////////////////////////////////////////////////////////
-    // Virtuelles Gas
-    //
-    // Schnelles Beschleunigen =
-    // deutlich mehr Motorlast
+    // SCHNELLER GASWECHSEL
     ////////////////////////////////////////////////////////////
 
-    let accelerationLoad =
-        Math.abs(delta) / 8;
-
-
-    ////////////////////////////////////////////////////////////
-    // Grundlast
-    ////////////////////////////////////////////////////////////
-
-    let load =
-        0.05 +
-        speed / 650;
-
-
-    ////////////////////////////////////////////////////////////
-    // Beschleunigung
-    ////////////////////////////////////////////////////////////
-
-    if (delta > 0) {
-
-        load +=
-            Math.min(
-                0.7,
-                accelerationLoad
-            );
+    if (speedAcceleration > 0.15) {
 
         rpm +=
             Math.min(
-                500,
-                delta * 15
+                450,
+                speedAcceleration * 120
             );
+
     }
 
 
     ////////////////////////////////////////////////////////////
-    // Abbremsen
+    // MOTORLAST
     ////////////////////////////////////////////////////////////
 
-    if (delta < 0) {
-
-        rpm -=
-            Math.min(
-                300,
-                Math.abs(delta) * 8
-            );
-
-        load *= 0.65;
-    }
+    let load;
 
 
-    ////////////////////////////////////////////////////////////
-    // Leerlauf
-    ////////////////////////////////////////////////////////////
+    if (actualSpeed < 2) {
 
-    if (speed < 2) {
+        load = 0.045;
 
-        rpm =
-            750;
+    } else {
 
         load =
-            0.05;
+            0.10 +
+            actualSpeed / 600;
+
     }
 
 
     ////////////////////////////////////////////////////////////
-    // Begrenzen
+    // BESCHLEUNIGEN
     ////////////////////////////////////////////////////////////
 
-    rpm =
+    if (speedAcceleration > 0) {
+
+        load +=
+            Math.min(
+                0.65,
+                speedAcceleration * 0.20
+            );
+
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // ABTOUREN
+    ////////////////////////////////////////////////////////////
+
+    if (speedAcceleration < -0.2) {
+
+        load *= 0.55;
+
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // LIMIT
+    ////////////////////////////////////////////////////////////
+
+    targetRPM =
         Math.max(
             700,
             Math.min(
@@ -857,7 +791,7 @@ function updateEngineModel() {
         );
 
 
-    load =
+    targetLoad =
         Math.max(
             0.03,
             Math.min(
@@ -867,21 +801,14 @@ function updateEngineModel() {
         );
 
 
-    targetRPM =
-        rpm;
-
-    targetLoad =
-        load;
-
-
     ////////////////////////////////////////////////////////////
-    // Anzeige
+    // DISPLAY
     ////////////////////////////////////////////////////////////
 
     document.getElementById(
         "speedValue"
     ).textContent =
-        Math.round(speed);
+        actualSpeed.toFixed(1);
 
 }
 
@@ -896,10 +823,6 @@ function startEngine() {
         return;
     }
 
-
-    ////////////////////////////////////////////////////////////
-    // CONTEXT
-    ////////////////////////////////////////////////////////////
 
     audioContext =
         new (
@@ -982,7 +905,7 @@ function startEngine() {
         400;
 
     filter.Q.value =
-        1.3;
+        1.4;
 
     filter.connect(
         exhaustGain
@@ -993,40 +916,32 @@ function startEngine() {
     // OSCILLATORS
     ////////////////////////////////////////////////////////////
 
-    oscillator1 =
+    osc1 =
         createOscillator(
             "sawtooth",
             rumbleGain
         );
 
-
-    oscillator2 =
+    osc2 =
         createOscillator(
             "square",
             filter
         );
 
-
-    oscillator3 =
+    osc3 =
         createOscillator(
             "sawtooth",
             filter
         );
 
-
-    oscillator4 =
+    osc4 =
         createOscillator(
             "triangle",
             aggressiveGain
         );
 
 
-    ////////////////////////////////////////////////////////////
-    // START
-    ////////////////////////////////////////////////////////////
-
-    engineRunning =
-        true;
+    engineRunning = true;
 
 
     document
@@ -1048,13 +963,11 @@ function startEngine() {
 
     audioContext.resume();
 
-
-    engineAudioLoop();
 }
 
 
 ////////////////////////////////////////////////////////////
-// CREATE OSCILLATOR
+// OSCILLATOR
 ////////////////////////////////////////////////////////////
 
 function createOscillator(
@@ -1100,10 +1013,10 @@ function createOscillator(
 
 
 ////////////////////////////////////////////////////////////
-// AUDIO ENGINE LOOP
+// AUDIO UPDATE
 ////////////////////////////////////////////////////////////
 
-function engineAudioLoop() {
+function updateAudio() {
 
     if (!engineRunning) {
         return;
@@ -1111,31 +1024,29 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // SMOOTH RPM
+    // RPM SMOOTHING
     ////////////////////////////////////////////////////////////
 
     currentRPM +=
         (
             targetRPM -
             currentRPM
-        ) *
-        0.08;
+        ) * 0.08;
 
 
     ////////////////////////////////////////////////////////////
-    // SMOOTH LOAD
+    // LOAD SMOOTHING
     ////////////////////////////////////////////////////////////
 
     currentLoad +=
         (
             targetLoad -
             currentLoad
-        ) *
-        0.06;
+        ) * 0.08;
 
 
     ////////////////////////////////////////////////////////////
-    // V8 FIRING FREQUENCY
+    // V8 FIRING
     ////////////////////////////////////////////////////////////
 
     const firingFrequency =
@@ -1143,11 +1054,10 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // UNREGELMÄSSIGER LEERLAUF
+    // IDLE
     ////////////////////////////////////////////////////////////
 
-    let idleFactor =
-        0;
+    let idleFactor = 0;
 
 
     if (currentRPM < 1400) {
@@ -1167,32 +1077,30 @@ function engineAudioLoop() {
                     idleFactor
                 )
             );
+
     }
 
 
     ////////////////////////////////////////////////////////////
-    // LOW RPM "BLOP"
+    // LUMPY V8
     ////////////////////////////////////////////////////////////
 
-    const time =
+    const t =
         performance.now() / 1000;
 
 
-    const lumpyIdle =
+    const lumpy =
 
-        Math.sin(time * 7.1) *
-
-        Math.sin(time * 3.17) *
-
+        Math.sin(t * 7.3) *
+        Math.sin(t * 3.11) *
         idleFactor;
 
 
     ////////////////////////////////////////////////////////////
-    // OSC 1
-    // Tiefer Motorblock
+    // LOW RUMBLE
     ////////////////////////////////////////////////////////////
 
-    oscillator1.frequency.setTargetAtTime(
+    osc1.frequency.setTargetAtTime(
 
         firingFrequency * 0.5,
 
@@ -1202,11 +1110,11 @@ function engineAudioLoop() {
     );
 
 
-    oscillator1._gain.gain.setTargetAtTime(
+    osc1._gain.gain.setTargetAtTime(
 
         0.12 +
         currentLoad * 0.18 +
-        lumpyIdle * 0.025,
+        lumpy * 0.025,
 
         audioContext.currentTime,
 
@@ -1215,11 +1123,10 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // OSC 2
-    // Auspuff
+    // EXHAUST
     ////////////////////////////////////////////////////////////
 
-    oscillator2.frequency.setTargetAtTime(
+    osc2.frequency.setTargetAtTime(
 
         firingFrequency,
 
@@ -1229,11 +1136,11 @@ function engineAudioLoop() {
     );
 
 
-    oscillator2._gain.gain.setTargetAtTime(
+    osc2._gain.gain.setTargetAtTime(
 
         0.06 +
         currentLoad * 0.22 +
-        idleFactor * 0.035,
+        idleFactor * 0.04,
 
         audioContext.currentTime,
 
@@ -1242,11 +1149,10 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // OSC 3
-    // V8 HARMONICS
+    // HARMONICS
     ////////////////////////////////////////////////////////////
 
-    oscillator3.frequency.setTargetAtTime(
+    osc3.frequency.setTargetAtTime(
 
         firingFrequency * 2,
 
@@ -1256,7 +1162,7 @@ function engineAudioLoop() {
     );
 
 
-    oscillator3._gain.gain.setTargetAtTime(
+    osc3._gain.gain.setTargetAtTime(
 
         0.015 +
         currentLoad * 0.10,
@@ -1268,11 +1174,10 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // OSC 4
-    // HOHE LAST / AGGRESSIV
+    // AGGRESSIVE HIGH RPM
     ////////////////////////////////////////////////////////////
 
-    oscillator4.frequency.setTargetAtTime(
+    osc4.frequency.setTargetAtTime(
 
         firingFrequency * 3,
 
@@ -1282,10 +1187,9 @@ function engineAudioLoop() {
     );
 
 
-    oscillator4._gain.gain.setTargetAtTime(
+    osc4._gain.gain.setTargetAtTime(
 
-        currentLoad *
-        0.08,
+        currentLoad * 0.10,
 
         audioContext.currentTime,
 
@@ -1300,9 +1204,7 @@ function engineAudioLoop() {
     const filterFrequency =
 
         250 +
-
         currentRPM * 0.25 +
-
         currentLoad * 2500;
 
 
@@ -1320,23 +1222,19 @@ function engineAudioLoop() {
 
 
     ////////////////////////////////////////////////////////////
-    // MASTER VOLUME
+    // VOLUME
     ////////////////////////////////////////////////////////////
 
     let volume =
 
-        0.28 +
-
+        0.25 +
         currentLoad * 0.45;
 
-
-    ////////////////////////////////////////////////////////////
-    // STAND
-    ////////////////////////////////////////////////////////////
 
     if (currentRPM < 1000) {
 
         volume *= 0.8;
+
     }
 
 
@@ -1367,15 +1265,23 @@ function engineAudioLoop() {
             currentLoad * 100
         );
 
+}
 
-    ////////////////////////////////////////////////////////////
-    // LOOP
-    ////////////////////////////////////////////////////////////
 
-    setTimeout(
-        engineAudioLoop,
-        25
+////////////////////////////////////////////////////////////
+// MAIN LOOP
+////////////////////////////////////////////////////////////
+
+function mainLoop() {
+
+    updateEngineModel();
+
+    updateAudio();
+
+    requestAnimationFrame(
+        mainLoop
     );
+
 }
 
 
@@ -1398,10 +1304,10 @@ document
 
 
 ////////////////////////////////////////////////////////////
-// INITIAL STATE
+// START
 ////////////////////////////////////////////////////////////
 
-updateEngineModel();
+mainLoop();
 
 </script>
 
