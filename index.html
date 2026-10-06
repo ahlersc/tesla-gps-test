@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesla GPS Test</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    .app {
+      width: 92%;
+      max-width: 700px;
+      margin: auto;
+      padding: 25px 0;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    #status {
+      color: #aaa;
+      font-size: 20px;
+      margin-bottom: 25px;
+    }
+
+    #speed {
+      font-size: 90px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .unit {
+      font-size: 24px;
+      color: #aaa;
+      margin-bottom: 25px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .card {
+      background: #222;
+      border-radius: 18px;
+      padding: 20px 10px;
+    }
+
+    .label {
+      color: #aaa;
+      font-size: 16px;
+    }
+
+    .value {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    #state {
+      background: #222;
+      border-radius: 18px;
+      padding: 20px;
+      margin: 15px 0;
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 10px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    #start {
+      background: white;
+      color: black;
+    }
+
+    #stop {
+      background: #444;
+      color: white;
+    }
+
+    .info {
+      color: #777;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <h1>🚗 Tesla GPS Test</h1>
+
+  <div id="status">Bereit</div>
+
+  <div id="speed">0.0</div>
+  <div class="unit">km/h</div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="label">Beschleunigung</div>
+      <div class="value" id="accel">0.00 m/s²</div>
+    </div>
+
+    <div class="card">
+      <div class="label">G-Wert</div>
+      <div class="value" id="g">0.00 G</div>
+    </div>
+
+    <div class="card">
+      <div class="label">GPS Genauigkeit</div>
+      <div class="value" id="accuracy">— m</div>
+    </div>
+
+    <div class="card">
+      <div class="label">GPS Geschwindigkeit</div>
+      <div class="value" id="gpsSpeed">—</div>
+    </div>
+
+  </div>
+
+  <div id="state">Warten</div>
+
+  <button id="start">
+    📍 GPS STARTEN
+  </button>
+
+  <button id="stop" disabled>
+    ⏹ STOPPEN
+  </button>
+
+  <div class="info">
+    Die Beschleunigung wird aus den GPS-Geschwindigkeitswerten
+    berechnet. Die Werte dienen nur zum Testen.
+  </div>
+
+</div>
+
+<script>
+
+let watchId = null;
+let lastSpeed = null;
+let lastTime = null;
+let filteredAccel = 0;
+
+const alpha = 0.25;
+const G = 9.80665;
+
+const speedEl = document.getElementById("speed");
+const accelEl = document.getElementById("accel");
+const gEl = document.getElementById("g");
+const accuracyEl = document.getElementById("accuracy");
+const gpsSpeedEl = document.getElementById("gpsSpeed");
+const stateEl = document.getElementById("state");
+const statusEl = document.getElementById("status");
+
+const startBtn = document.getElementById("start");
+const stopBtn = document.getElementById("stop");
+
+
+function resetValues() {
+
+  speedEl.textContent = "0.0";
+  accelEl.textContent = "0.00 m/s²";
+  gEl.textContent = "0.00 G";
+  accuracyEl.textContent = "— m";
+  gpsSpeedEl.textContent = "—";
+
+  stateEl.textContent = "Warten";
+
+  lastSpeed = null;
+  lastTime = null;
+  filteredAccel = 0;
+}
+
+
+function handlePosition(position) {
+
+  const now = position.timestamp || Date.now();
+  const coords = position.coords;
+
+  let speed = coords.speed;
+
+  if (
+    typeof speed !== "number" ||
+    !Number.isFinite(speed)
+  ) {
+    statusEl.textContent =
+      "GPS aktiv – Geschwindigkeit nicht verfügbar";
+
+    return;
+  }
+
+  speed = Math.max(0, speed);
+
+  const kmh = speed * 3.6;
+
+  speedEl.textContent = kmh.toFixed(1);
+  gpsSpeedEl.textContent = kmh.toFixed(1) + " km/h";
+
+
+  if (typeof coords.accuracy === "number") {
+
+    accuracyEl.textContent =
+      coords.accuracy.toFixed(1) + " m";
+  }
+
+
+  if (
+    lastSpeed !== null &&
+    lastTime !== null
+  ) {
+
+    const dt = (now - lastTime) / 1000;
+
+    if (dt > 0 && dt < 5) {
+
+      const rawAccel =
+        (speed - lastSpeed) / dt;
+
+      filteredAccel =
+        alpha * rawAccel +
+        (1 - alpha) * filteredAccel;
+
+      const g = filteredAccel / G;
+
+      accelEl.textContent =
+        filteredAccel.toFixed(2) +
+        " m/s²";
+
+      gEl.textContent =
+        g.toFixed(2) + " G";
+
+
+      if (g > 0.05) {
+
+        stateEl.textContent =
+          "🚀 BESCHLEUNIGEN";
+
+      } else if (g < -0.05) {
+
+        stateEl.textContent =
+          "🛑 BREMSEN";
+
+      } else {
+
+        stateEl.textContent =
+          "➡️ ROLLEN";
+      }
+    }
+  }
+
+
+  lastSpeed = speed;
+  lastTime = now;
+
+  statusEl.textContent = "GPS aktiv";
+}
+
+
+function handleError(error) {
+
+  let message = "GPS-Fehler";
+
+  if (error.code === 1) {
+
+    message =
+      "Standortzugriff wurde nicht erlaubt";
+
+  } else if (error.code === 2) {
+
+    message =
+      "Standort konnte nicht ermittelt werden";
+
+  } else if (error.code === 3) {
+
+    message =
+      "GPS-Zeitüberschreitung";
+  }
+
+  statusEl.textContent = message;
+  stateEl.textContent = "⚠️ FEHLER";
+}
+
+
+startBtn.addEventListener("click", function() {
+
+  if (!("geolocation" in navigator)) {
+
+    statusEl.textContent =
+      "Dieser Browser unterstützt kein GPS";
+
+    return;
+  }
+
+
+  resetValues();
+
+  statusEl.textContent =
+    "GPS wird gestartet …";
+
+
+  watchId =
+    navigator.geolocation.watchPosition(
+      handlePosition,
+      handleError,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+      }
+    );
+
+
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+});
+
+
+stopBtn.addEventListener("click", function() {
+
+  if (watchId !== null) {
+
+    navigator.geolocation.clearWatch(
+      watchId
+    );
+
+    watchId = null;
+  }
+
+
+  statusEl.textContent =
+    "GPS gestoppt";
+
+  stateEl.textContent =
+    "Gestoppt";
+
+
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+});
+
+</script>
+
+</body>
+</html>
