@@ -3,222 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Old American V8 GPS Sound</title>
+
+<title>Old American V8 Simulator</title>
 
 <style>
+
+    * {
+        box-sizing: border-box;
+    }
+
     body {
-        background: #111;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        text-align: center;
         margin: 0;
         padding: 20px;
+        background: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        max-width: 650px;
+        margin: auto;
+        text-align: center;
     }
 
     h1 {
-        font-size: 28px;
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        color: #999;
+        margin-bottom: 30px;
+    }
+
+    .panel {
+        background: #1d1d1d;
+        border-radius: 18px;
+        padding: 25px;
         margin-bottom: 20px;
     }
 
+    .speed {
+        font-size: 56px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+
+    .unit {
+        color: #aaa;
+        font-size: 20px;
+    }
+
+    input[type="range"] {
+        width: 100%;
+        height: 45px;
+        accent-color: #d32f2f;
+        cursor: pointer;
+    }
+
+    .range-labels {
+        display: flex;
+        justify-content: space-between;
+        color: #888;
+        font-size: 14px;
+    }
+
     button {
+        width: 100%;
+        padding: 18px;
         font-size: 22px;
-        padding: 15px 30px;
-        margin: 10px;
-        border-radius: 10px;
+        font-weight: bold;
         border: none;
+        border-radius: 12px;
         background: #c62828;
         color: white;
+        cursor: pointer;
     }
 
     button:active {
         background: #8e0000;
     }
 
-    .box {
-        max-width: 600px;
-        margin: auto;
-        background: #1c1c1c;
-        padding: 20px;
-        border-radius: 15px;
+    .data {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
     }
 
-    .value {
-        font-size: 32px;
-        margin: 12px 0;
+    .data-box {
+        background: #282828;
+        border-radius: 12px;
+        padding: 15px;
     }
 
-    .small {
+    .data-label {
+        color: #999;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .data-value {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .status {
+        margin-top: 20px;
         color: #aaa;
-        font-size: 16px;
     }
 
-    #status {
-        margin-top: 15px;
-        color: #0f0;
+    .engine-light {
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        border-radius: 50%;
+        background: #555;
+        margin-right: 8px;
+        vertical-align: middle;
     }
+
+    .engine-light.running {
+        background: #ff3b30;
+        box-shadow: 0 0 15px #ff3b30;
+    }
+
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="container">
 
     <h1>🇺🇸 Old American V8</h1>
 
-    <button id="startButton">
-        🔊 V8 STARTEN
-    </button>
-
-    <div class="value">
-        Geschwindigkeit:
-        <span id="speed">0</span> km/h
+    <div class="subtitle">
+        GPS deaktiviert · Geschwindigkeit wird simuliert
     </div>
 
-    <div class="value">
-        Drehzahl:
-        <span id="rpm">800</span> RPM
+
+    <!-- GESCHWINDIGKEIT -->
+
+    <div class="panel">
+
+        <div class="unit">
+            SIMULIERTE GESCHWINDIGKEIT
+        </div>
+
+        <div class="speed">
+            <span id="speedValue">0</span>
+            <span class="unit">km/h</span>
+        </div>
+
+        <input
+            id="speedSlider"
+            type="range"
+            min="0"
+            max="200"
+            step="1"
+            value="0"
+        >
+
+        <div class="range-labels">
+            <span>0</span>
+            <span>50</span>
+            <span>100</span>
+            <span>150</span>
+            <span>200 km/h</span>
+        </div>
+
     </div>
 
-    <div class="value">
-        Last:
-        <span id="load">0</span> %
+
+    <!-- MOTOR DATEN -->
+
+    <div class="panel">
+
+        <div class="data">
+
+            <div class="data-box">
+
+                <div class="data-label">
+                    DREHZAHL
+                </div>
+
+                <div class="data-value">
+                    <span id="rpmValue">800</span>
+                    <span style="font-size:14px;color:#888;">
+                        RPM
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="data-box">
+
+                <div class="data-label">
+                    MOTORLAST
+                </div>
+
+                <div class="data-value">
+                    <span id="loadValue">0</span>
+                    <span style="font-size:14px;color:#888;">
+                        %
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
 
-    <div class="small">
-        Beschleunigung:
-        <span id="accel">0</span> m/s²
-    </div>
 
-    <div class="small">
-        GPS Genauigkeit:
-        <span id="accuracy">---</span> m
-    </div>
+    <!-- START -->
 
-    <div id="status">
-        Warte auf GPS...
+    <div class="panel">
+
+        <button id="startButton">
+            🔊 V8 STARTEN
+        </button>
+
+        <div class="status">
+
+            <span
+                id="engineLight"
+                class="engine-light">
+            </span>
+
+            <span id="statusText">
+                Motor aus
+            </span>
+
+        </div>
+
     </div>
 
 </div>
 
+
 <script>
 
 ////////////////////////////////////////////////////////////
-// GPS
-////////////////////////////////////////////////////////////
-
-let currentSpeed = 0;
-let previousSpeed = null;
-let previousTime = null;
-
-let acceleration = 0;
-let smoothAcceleration = 0;
-
-navigator.geolocation.watchPosition(
-
-    function(position) {
-
-        const coords = position.coords;
-
-        let speedMS = coords.speed;
-
-        // Manche Geräte liefern null.
-        // Dann berechnen wir Geschwindigkeit aus Positionsänderung
-        // nicht direkt, sondern lassen den letzten Wert stehen.
-        if (speedMS == null || isNaN(speedMS)) {
-            speedMS = currentSpeed / 3.6;
-        }
-
-        const speedKMH = Math.max(0, speedMS * 3.6);
-
-        const now = performance.now();
-
-        ////////////////////////////////////////////////////////
-        // Beschleunigung
-        ////////////////////////////////////////////////////////
-
-        if (previousSpeed !== null && previousTime !== null) {
-
-            const dt = (now - previousTime) / 1000;
-
-            if (dt > 0.05 && dt < 5) {
-
-                acceleration =
-                    (speedMS - previousSpeed) / dt;
-
-                // GPS kann stark rauschen.
-                // Deshalb glätten wir die Beschleunigung.
-                smoothAcceleration =
-                    smoothAcceleration * 0.80 +
-                    acceleration * 0.20;
-            }
-        }
-
-        previousSpeed = speedMS;
-        previousTime = now;
-
-        currentSpeed = speedKMH;
-
-        ////////////////////////////////////////////////////////
-        // Anzeige
-        ////////////////////////////////////////////////////////
-
-        document.getElementById("speed").textContent =
-            speedKMH.toFixed(1);
-
-        document.getElementById("accel").textContent =
-            smoothAcceleration.toFixed(2);
-
-        document.getElementById("accuracy").textContent =
-            coords.accuracy
-                ? coords.accuracy.toFixed(0)
-                : "---";
-
-        updateEngine();
-
-    },
-
-    function(error) {
-
-        document.getElementById("status").textContent =
-            "GPS Fehler: " + error.message;
-
-    },
-
-    {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 10000
-    }
-);
-
-
-////////////////////////////////////////////////////////////
-// AUDIO
+// AUDIO VARIABLES
 ////////////////////////////////////////////////////////////
 
 let audioContext = null;
 
 let masterGain = null;
+let engineGain = null;
 let exhaustGain = null;
 let rumbleGain = null;
-let intakeGain = null;
 
 let filter = null;
 
+let oscillator1 = null;
+let oscillator2 = null;
+let oscillator3 = null;
+let oscillator4 = null;
+
 let engineRunning = false;
 
+
 ////////////////////////////////////////////////////////////
-// V8 PARAMETER
+// ENGINE STATE
 ////////////////////////////////////////////////////////////
 
 let targetRPM = 800;
-let engineRPM = 800;
+let currentRPM = 800;
 
 let targetLoad = 0;
-let engineLoad = 0;
+let currentLoad = 0;
+
+let simulatedSpeed = 0;
+
 
 ////////////////////////////////////////////////////////////
-// V8 AUDIO
+// START ENGINE
 ////////////////////////////////////////////////////////////
 
 function startEngine() {
@@ -227,100 +288,134 @@ function startEngine() {
         return;
     }
 
-    audioContext =
-        new (window.AudioContext || window.webkitAudioContext)();
 
-    ////////////////////////////////////////////////////////////
-    // Master
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // AUDIO CONTEXT
+    ////////////////////////////////////////////////////////
+
+    audioContext =
+        new (window.AudioContext ||
+             window.webkitAudioContext)();
+
+
+    ////////////////////////////////////////////////////////
+    // MASTER GAIN
+    ////////////////////////////////////////////////////////
 
     masterGain =
         audioContext.createGain();
 
-    masterGain.gain.value = 0.0;
+    masterGain.gain.value = 0;
 
-    masterGain.connect(audioContext.destination);
+    masterGain.connect(
+        audioContext.destination
+    );
 
 
-    ////////////////////////////////////////////////////////////
-    // Tiefes Auspuff-/Motorgeräusch
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // ENGINE GAIN
+    ////////////////////////////////////////////////////////
 
-    rumbleGain =
+    engineGain =
         audioContext.createGain();
 
-    rumbleGain.gain.value = 0.5;
+    engineGain.gain.value = 0.5;
 
-    rumbleGain.connect(masterGain);
+    engineGain.connect(
+        masterGain
+    );
 
 
-    ////////////////////////////////////////////////////////////
-    // Exhaust
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // EXHAUST GAIN
+    ////////////////////////////////////////////////////////
 
     exhaustGain =
         audioContext.createGain();
 
     exhaustGain.gain.value = 0.6;
 
-    exhaustGain.connect(masterGain);
+    exhaustGain.connect(
+        masterGain
+    );
 
 
-    ////////////////////////////////////////////////////////////
-    // Intake
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // DEEP RUMBLE
+    ////////////////////////////////////////////////////////
 
-    intakeGain =
+    rumbleGain =
         audioContext.createGain();
 
-    intakeGain.gain.value = 0.0;
+    rumbleGain.gain.value = 0.8;
 
-    intakeGain.connect(masterGain);
+    rumbleGain.connect(
+        masterGain
+    );
 
 
-    ////////////////////////////////////////////////////////////
-    // Low Pass
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // FILTER
+    ////////////////////////////////////////////////////////
 
     filter =
         audioContext.createBiquadFilter();
 
     filter.type = "lowpass";
 
-    filter.frequency.value = 700;
+    filter.frequency.value = 500;
 
-    filter.Q.value = 1.0;
+    filter.Q.value = 1.2;
 
-    filter.connect(exhaustGain);
-
-
-    ////////////////////////////////////////////////////////////
-    // Grundfrequenzen
-    ////////////////////////////////////////////////////////////
-
-    createEngineOscillator(
-        1,
-        "sawtooth",
-        rumbleGain
+    filter.connect(
+        exhaustGain
     );
 
-    createEngineOscillator(
-        2,
-        "square",
-        filter
-    );
 
-    createEngineOscillator(
-        3,
-        "triangle",
-        filter
-    );
+    ////////////////////////////////////////////////////////
+    // OSCILLATORS
+    ////////////////////////////////////////////////////////
 
+    oscillator1 =
+        createOscillator(
+            "sawtooth",
+            rumbleGain
+        );
+
+    oscillator2 =
+        createOscillator(
+            "sawtooth",
+            filter
+        );
+
+    oscillator3 =
+        createOscillator(
+            "square",
+            filter
+        );
+
+    oscillator4 =
+        createOscillator(
+            "triangle",
+            engineGain
+        );
+
+
+    ////////////////////////////////////////////////////////
+    // ENGINE START
+    ////////////////////////////////////////////////////////
 
     engineRunning = true;
 
-    document.getElementById("status").textContent =
-        "🔥 V8 läuft";
+    document
+        .getElementById("engineLight")
+        .classList.add("running");
+
+    document
+        .getElementById("statusText")
+        .textContent =
+        "V8 läuft";
+
 
     audioContext.resume();
 
@@ -329,44 +424,37 @@ function startEngine() {
 
 
 ////////////////////////////////////////////////////////////
-// ENGINE OSCILLATOR
+// CREATE OSCILLATOR
 ////////////////////////////////////////////////////////////
 
-function createEngineOscillator(
-    number,
+function createOscillator(
     type,
     destination
 ) {
 
-    const osc =
+    const oscillator =
         audioContext.createOscillator();
 
     const gain =
         audioContext.createGain();
 
-    osc.type = type;
+
+    oscillator.type = type;
 
     gain.gain.value = 0;
 
-    osc.connect(gain);
+
+    oscillator.connect(gain);
+
     gain.connect(destination);
 
-    osc.start();
+    oscillator.start();
 
-    osc._gain = gain;
-    osc._type = type;
 
-    if (number === 1) {
-        window.v8Osc1 = osc;
-    }
+    oscillator._gain = gain;
 
-    if (number === 2) {
-        window.v8Osc2 = osc;
-    }
 
-    if (number === 3) {
-        window.v8Osc3 = osc;
-    }
+    return oscillator;
 }
 
 
@@ -380,240 +468,361 @@ function engineLoop() {
         return;
     }
 
-    ////////////////////////////////////////////////////////////
-    // RPM glätten
-    ////////////////////////////////////////////////////////////
 
-    engineRPM +=
-        (targetRPM - engineRPM) * 0.08;
+    ////////////////////////////////////////////////////////
+    // RPM SMOOTHING
+    ////////////////////////////////////////////////////////
 
-
-    ////////////////////////////////////////////////////////////
-    // Last glätten
-    ////////////////////////////////////////////////////////////
-
-    engineLoad +=
-        (targetLoad - engineLoad) * 0.08;
+    currentRPM +=
+        (targetRPM - currentRPM) * 0.07;
 
 
-    ////////////////////////////////////////////////////////////
-    // Kurbelwellenfrequenz
+    ////////////////////////////////////////////////////////
+    // LOAD SMOOTHING
+    ////////////////////////////////////////////////////////
+
+    currentLoad +=
+        (targetLoad - currentLoad) * 0.06;
+
+
+    ////////////////////////////////////////////////////////
+    // V8 FIRING FREQUENCY
     //
-    // 4-Takt V8:
+    // 8 Zylinder
+    // 4-Takt
     //
-    // 8 Zündungen pro 2 Umdrehungen
+    // 8 Zündungen pro 2 Kurbelwellenumdrehungen
     //
-    // firing frequency =
-    // RPM * 8 / 120
-    //
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
 
     const firingFrequency =
-        engineRPM / 15;
+        currentRPM / 15;
 
 
-    ////////////////////////////////////////////////////////////
-    // Grundfrequenz
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // LOW FREQUENCY RUMBLE
+    ////////////////////////////////////////////////////////
 
-    const baseFrequency =
-        firingFrequency;
+    oscillator1.frequency.setTargetAtTime(
 
+        firingFrequency * 0.5,
 
-    ////////////////////////////////////////////////////////////
-    // V8 Charakter
-    ////////////////////////////////////////////////////////////
-
-    if (window.v8Osc1) {
-
-        window.v8Osc1.frequency.setTargetAtTime(
-            baseFrequency * 0.50,
-            audioContext.currentTime,
-            0.03
-        );
-
-        window.v8Osc1._gain.gain.setTargetAtTime(
-            0.22 + engineLoad * 0.18,
-            audioContext.currentTime,
-            0.03
-        );
-    }
-
-
-    if (window.v8Osc2) {
-
-        window.v8Osc2.frequency.setTargetAtTime(
-            baseFrequency * 1.0,
-            audioContext.currentTime,
-            0.03
-        );
-
-        window.v8Osc2._gain.gain.setTargetAtTime(
-            0.04 + engineLoad * 0.10,
-            audioContext.currentTime,
-            0.03
-        );
-    }
-
-
-    if (window.v8Osc3) {
-
-        window.v8Osc3.frequency.setTargetAtTime(
-            baseFrequency * 2.0,
-            audioContext.currentTime,
-            0.03
-        );
-
-        window.v8Osc3._gain.gain.setTargetAtTime(
-            0.02 + engineLoad * 0.08,
-            audioContext.currentTime,
-            0.03
-        );
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    // Filter
-    ////////////////////////////////////////////////////////////
-
-    if (filter) {
-
-        const filterFrequency =
-            300 +
-            engineRPM * 0.18 +
-            engineLoad * 900;
-
-        filter.frequency.setTargetAtTime(
-            Math.min(5000, filterFrequency),
-            audioContext.currentTime,
-            0.05
-        );
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    // Hauptlautstärke
-    ////////////////////////////////////////////////////////////
-
-    let volume =
-        0.35 +
-        engineLoad * 0.30;
-
-    // Im Stand nicht zu laut
-    if (engineRPM < 1000) {
-        volume *= 0.75;
-    }
-
-    masterGain.gain.setTargetAtTime(
-        volume,
         audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // MAIN EXHAUST
+    ////////////////////////////////////////////////////////
+
+    oscillator2.frequency.setTargetAtTime(
+
+        firingFrequency,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // HIGHER HARMONICS
+    ////////////////////////////////////////////////////////
+
+    oscillator3.frequency.setTargetAtTime(
+
+        firingFrequency * 2,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // ENGINE BODY
+    ////////////////////////////////////////////////////////
+
+    oscillator4.frequency.setTargetAtTime(
+
+        firingFrequency * 1.5,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // IDLE CHARACTER
+    ////////////////////////////////////////////////////////
+
+    let idleFactor = 0;
+
+    if (currentRPM < 1300) {
+
+        idleFactor =
+            1 -
+            ((currentRPM - 750) / 550);
+
+        idleFactor =
+            Math.max(
+                0,
+                Math.min(
+                    1,
+                    idleFactor
+                )
+            );
+    }
+
+
+    ////////////////////////////////////////////////////////
+    // UNRUHIGER LEERLAUF
+    ////////////////////////////////////////////////////////
+
+    const idlePulse =
+        Math.sin(
+            performance.now() / 130
+        ) * idleFactor;
+
+
+    ////////////////////////////////////////////////////////
+    // RUMBLE
+    ////////////////////////////////////////////////////////
+
+    const rumbleVolume =
+        0.13 +
+        currentLoad * 0.15 +
+        idlePulse * 0.025;
+
+
+    oscillator1._gain.gain.setTargetAtTime(
+
+        Math.max(
+            0.03,
+            rumbleVolume
+        ),
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // DEEP EXHAUST
+    ////////////////////////////////////////////////////////
+
+    const exhaustVolume =
+        0.08 +
+        currentLoad * 0.20 +
+        idleFactor * 0.04;
+
+
+    oscillator2._gain.gain.setTargetAtTime(
+
+        exhaustVolume,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // AGGRESSIVE HARMONICS
+    ////////////////////////////////////////////////////////
+
+    const harmonicVolume =
+        0.015 +
+        currentLoad * 0.08;
+
+
+    oscillator3._gain.gain.setTargetAtTime(
+
+        harmonicVolume,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // ENGINE BODY
+    ////////////////////////////////////////////////////////
+
+    oscillator4._gain.gain.setTargetAtTime(
+
+        0.02 +
+        currentLoad * 0.08,
+
+        audioContext.currentTime,
+
+        0.04
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // FILTER
+    ////////////////////////////////////////////////////////
+
+    const filterFrequency =
+
+        250 +
+
+        currentRPM * 0.20 +
+
+        currentLoad * 1800;
+
+
+    filter.frequency.setTargetAtTime(
+
+        Math.min(
+            5000,
+            filterFrequency
+        ),
+
+        audioContext.currentTime,
+
         0.05
     );
 
 
-    ////////////////////////////////////////////////////////////
-    // Nächsten Zyklus planen
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // MASTER VOLUME
+    ////////////////////////////////////////////////////////
 
-    setTimeout(engineLoop, 30);
+    let volume =
+
+        0.22 +
+
+        currentLoad * 0.35;
+
+
+    ////////////////////////////////////////////////////////
+    // IDLE ETWAS LEISER
+    ////////////////////////////////////////////////////////
+
+    if (currentRPM < 1000) {
+
+        volume *= 0.85;
+    }
+
+
+    masterGain.gain.setTargetAtTime(
+
+        volume,
+
+        audioContext.currentTime,
+
+        0.05
+    );
+
+
+    ////////////////////////////////////////////////////////
+    // NEXT UPDATE
+    ////////////////////////////////////////////////////////
+
+    setTimeout(
+        engineLoop,
+        25
+    );
 }
 
 
 ////////////////////////////////////////////////////////////
-// ENGINE MODEL
+// SPEED → ENGINE MODEL
 ////////////////////////////////////////////////////////////
 
-function updateEngine() {
+function updateEngineFromSpeed() {
 
-    ////////////////////////////////////////////////////////////
-    // Geschwindigkeit
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // SPEED
+    ////////////////////////////////////////////////////////
 
     const speed =
-        currentSpeed;
+        simulatedSpeed;
 
 
-    ////////////////////////////////////////////////////////////
-    // Drehzahl aus Geschwindigkeit
+    ////////////////////////////////////////////////////////
+    // RPM CURVE
     //
-    // 0 km/h   = ~800 RPM
-    // 10 km/h  = ~1100 RPM
-    // 50 km/h  = ~2200 RPM
-    // 100 km/h = ~3700 RPM
-    // 200 km/h = ~6000 RPM
+    // 0 km/h   = 800 RPM
+    // 20 km/h  = 1300 RPM
+    // 50 km/h  = 2100 RPM
+    // 100 km/h = 3400 RPM
+    // 150 km/h = 4700 RPM
+    // 200 km/h = 6000 RPM
     //
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
 
     let rpm =
+
         800 +
-        speed * 26;
+
+        speed * 25;
 
 
-    ////////////////////////////////////////////////////////////
-    // Bei höherer Beschleunigung etwas mehr Drehzahl
-    ////////////////////////////////////////////////////////////
-
-    if (smoothAcceleration > 0.2) {
-
-        rpm +=
-            smoothAcceleration * 350;
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    // Begrenzen
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // LIMIT
+    ////////////////////////////////////////////////////////
 
     rpm =
-        Math.max(750, rpm);
-
-    rpm =
-        Math.min(6500, rpm);
+        Math.max(
+            750,
+            Math.min(
+                6500,
+                rpm
+            )
+        );
 
 
     targetRPM = rpm;
 
 
-    ////////////////////////////////////////////////////////////
-    // LAST
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // VIRTUELLE MOTORLAST
+    ////////////////////////////////////////////////////////
 
-    // Beschleunigung positiv =
-    // Fahrer gibt virtuell Gas
-
-    let load =
-        Math.max(
-            0,
-            smoothAcceleration / 2.5
-        );
+    let load = 0;
 
 
-    ////////////////////////////////////////////////////////////
-    // Bei höherem Tempo etwas Grundlast
-    ////////////////////////////////////////////////////////////
+    if (speed < 3) {
 
-    if (speed > 10) {
+        // Leerlauf
+        load = 0.05;
 
-        load +=
-            Math.min(
-                0.35,
-                speed / 300
-            );
+    } else {
+
+        // Grundlast steigt mit Geschwindigkeit
+
+        load =
+            0.10 +
+            speed / 500;
     }
 
 
-    ////////////////////////////////////////////////////////////
-    // Bei Stillstand fast keine Last
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // BEI NIEDRIGER GESCHWINDIGKEIT
+    // mehr "blubbernder" Charakter
+    ////////////////////////////////////////////////////////
 
-    if (speed < 2) {
-        load *= 0.15;
+    if (speed < 20) {
+
+        load += 0.05;
     }
 
+
+    ////////////////////////////////////////////////////////
+    // LIMIT
+    ////////////////////////////////////////////////////////
 
     load =
         Math.max(
-            0,
+            0.03,
             Math.min(
                 1,
                 load
@@ -624,15 +833,76 @@ function updateEngine() {
     targetLoad = load;
 
 
-    ////////////////////////////////////////////////////////////
-    // Anzeige
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    // DISPLAY
+    ////////////////////////////////////////////////////////
 
-    document.getElementById("rpm").textContent =
-        Math.round(engineRPM);
+    document
+        .getElementById("speedValue")
+        .textContent =
+        Math.round(speed);
 
-    document.getElementById("load").textContent =
-        Math.round(engineLoad * 100);
+
+    document
+        .getElementById("rpmValue")
+        .textContent =
+        Math.round(currentRPM);
+
+
+    document
+        .getElementById("loadValue")
+        .textContent =
+        Math.round(currentLoad * 100);
+}
+
+
+////////////////////////////////////////////////////////////
+// SPEED SLIDER
+////////////////////////////////////////////////////////////
+
+const speedSlider =
+    document.getElementById(
+        "speedSlider"
+    );
+
+
+speedSlider.addEventListener(
+    "input",
+    function() {
+
+        simulatedSpeed =
+            Number(
+                speedSlider.value
+            );
+
+
+        updateEngineFromSpeed();
+
+    }
+);
+
+
+////////////////////////////////////////////////////////////
+// DISPLAY LOOP
+////////////////////////////////////////////////////////////
+
+function displayLoop() {
+
+    document
+        .getElementById("rpmValue")
+        .textContent =
+        Math.round(currentRPM);
+
+
+    document
+        .getElementById("loadValue")
+        .textContent =
+        Math.round(currentLoad * 100);
+
+
+    requestAnimationFrame(
+        displayLoop
+    );
 }
 
 
@@ -650,6 +920,15 @@ document
 
         }
     );
+
+
+////////////////////////////////////////////////////////////
+// INITIALIZE
+////////////////////////////////////////////////////////////
+
+updateEngineFromSpeed();
+
+displayLoop();
 
 </script>
 
