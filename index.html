@@ -1,141 +1,101 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Tesla Sensor Test</title>
+<title>Tesla Fake Engine</title>
 
-  <style>
+<style>
 
-    * {
-      box-sizing: border-box;
-    }
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
 
-    .app {
-      width: 92%;
-      max-width: 750px;
-      margin: auto;
-      padding: 25px 0 40px;
-    }
+.app {
+  width: 92%;
+  max-width: 700px;
+  margin: auto;
+  padding: 25px 0;
+}
 
-    h1 {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
+h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
 
-    #status {
-      color: #aaa;
-      font-size: 19px;
-      margin-bottom: 25px;
-    }
+.status {
+  color: #aaa;
+  font-size: 18px;
+  margin-bottom: 25px;
+}
 
-    .speed {
-      font-size: 90px;
-      font-weight: bold;
-      line-height: 1;
-    }
+.speed {
+  font-size: 90px;
+  font-weight: bold;
+  line-height: 1;
+}
 
-    .unit {
-      font-size: 24px;
-      color: #aaa;
-      margin-bottom: 25px;
-    }
+.unit {
+  font-size: 24px;
+  color: #aaa;
+  margin-bottom: 25px;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+.card {
+  background: #222;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
 
-    .card {
-      background: #222;
-      border-radius: 18px;
-      padding: 18px 10px;
-    }
+.label {
+  color: #aaa;
+  font-size: 17px;
+}
 
-    .label {
-      color: #aaa;
-      font-size: 16px;
-    }
+.value {
+  font-size: 38px;
+  font-weight: bold;
+  margin-top: 8px;
+}
 
-    .value {
-      font-size: 28px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
+button {
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: bold;
+}
 
-    .state {
-      background: #222;
-      border-radius: 18px;
-      padding: 20px;
-      margin: 15px 0;
-      font-size: 25px;
-      font-weight: bold;
-    }
+#start {
+  background: white;
+  color: black;
+}
 
-    .sensor {
-      margin-top: 15px;
-      background: #181818;
-      border-radius: 18px;
-      padding: 20px;
-      text-align: left;
-    }
+#stop {
+  background: #444;
+  color: white;
+}
 
-    .sensor h2 {
-      text-align: center;
-      font-size: 22px;
-      margin-top: 0;
-    }
+.info {
+  color: #777;
+  font-size: 14px;
+  margin-top: 20px;
+  line-height: 1.5;
+}
 
-    .sensor-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #333;
-      font-size: 18px;
-    }
-
-    .sensor-row:last-child {
-      border-bottom: none;
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 16px;
-      padding: 20px;
-      margin-top: 10px;
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    #start {
-      background: white;
-      color: black;
-    }
-
-    #stop {
-      background: #444;
-      color: white;
-    }
-
-    .info {
-      color: #777;
-      font-size: 14px;
-      margin-top: 20px;
-      line-height: 1.5;
-    }
-
-  </style>
+</style>
 </head>
 
 
@@ -143,247 +103,115 @@
 
 <div class="app">
 
-  <h1>🚗 Tesla Sensor Test</h1>
+<h1>🚗 Tesla Fake Engine</h1>
 
-  <div id="status">
-    Bereit
-  </div>
+<div class="status" id="status">
+Bereit
+</div>
 
 
-  <!-- GPS Geschwindigkeit -->
+<div class="speed" id="speed">
+0
+</div>
 
-  <div class="speed" id="speed">
-    0.0
-  </div>
+<div class="unit">
+km/h
+</div>
 
-  <div class="unit">
-    km/h
-  </div>
 
+<div class="card">
 
-  <!-- GPS Werte -->
+<div class="label">
+Virtuelle Drehzahl
+</div>
 
-  <div class="grid">
+<div class="value" id="rpm">
+800 RPM
+</div>
 
-    <div class="card">
+</div>
 
-      <div class="label">
-        GPS Beschleunigung
-      </div>
 
-      <div class="value" id="gpsAccel">
-        0.00 m/s²
-      </div>
+<div class="card">
 
-    </div>
+<div class="label">
+Motorlast
+</div>
 
+<div class="value" id="load">
+0 %
+</div>
 
-    <div class="card">
+</div>
 
-      <div class="label">
-        GPS G-Wert
-      </div>
 
-      <div class="value" id="gpsG">
-        0.00 G
-      </div>
+<button id="start">
+🔊 MOTOR STARTEN
+</button>
 
-    </div>
 
+<button id="stop" disabled>
+⏹ STOPPEN
+</button>
 
-    <div class="card">
 
-      <div class="label">
-        GPS Genauigkeit
-      </div>
+<div class="info">
 
-      <div class="value" id="accuracy">
-        —
-      </div>
+Die Drehzahl wird aus der GPS-Geschwindigkeit
+berechnet. Der Sound wird direkt im Browser erzeugt.
 
-    </div>
-
-
-    <div class="card">
-
-      <div class="label">
-        GPS Status
-      </div>
-
-      <div class="value" id="gpsStatus">
-        —
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- Fahrzustand -->
-
-  <div class="state" id="state">
-    Warten
-  </div>
-
-
-  <!-- DeviceMotion -->
-
-  <div class="sensor">
-
-    <h2>
-      📱 DeviceMotion Sensor
-    </h2>
-
-
-    <div class="sensor-row">
-
-      <span>
-        Sensor verfügbar
-      </span>
-
-      <strong id="motionAvailable">
-        NEIN
-      </strong>
-
-    </div>
-
-
-    <div class="sensor-row">
-
-      <span>
-        X
-      </span>
-
-      <strong id="motionX">
-        —
-      </strong>
-
-    </div>
-
-
-    <div class="sensor-row">
-
-      <span>
-        Y
-      </span>
-
-      <strong id="motionY">
-        —
-      </strong>
-
-    </div>
-
-
-    <div class="sensor-row">
-
-      <span>
-        Z
-      </span>
-
-      <strong id="motionZ">
-        —
-      </strong>
-
-    </div>
-
-
-    <div class="sensor-row">
-
-      <span>
-        Bewegung
-      </span>
-
-      <strong id="motionStatus">
-        Keine Daten
-      </strong>
-
-    </div>
-
-  </div>
-
-
-  <!-- Buttons -->
-
-  <button id="start">
-    📍 GPS + SENSOR STARTEN
-  </button>
-
-
-  <button id="stop" disabled>
-    ⏹ STOPPEN
-  </button>
-
-
-  <div class="info">
-
-    Diese Seite testet ausschließlich Browser-Sensoren.
-    Es werden keine Tesla-API-Daten verwendet.
-
-  </div>
+</div>
 
 </div>
 
 
 <script>
 
-
 /* =====================================================
-   GRUNDWERTE
+   GPS
    ===================================================== */
 
 let watchId = null;
 
+let currentSpeed = 0;
+let targetSpeed = 0;
+
 let lastSpeed = null;
 let lastTime = null;
 
-let filteredGpsAccel = 0;
-
-const alpha = 0.25;
-
-const G = 9.80665;
+let acceleration = 0;
 
 
 /* =====================================================
-   HTML ELEMENTE
+   AUDIO
    ===================================================== */
 
-const speedEl =
+let audioContext = null;
+
+let oscillator = null;
+
+let gainNode = null;
+
+let filterNode = null;
+
+let audioStarted = false;
+
+
+/* =====================================================
+   HTML
+   ===================================================== */
+
+const speedElement =
   document.getElementById("speed");
 
-const gpsAccelEl =
-  document.getElementById("gpsAccel");
+const rpmElement =
+  document.getElementById("rpm");
 
-const gpsGEl =
-  document.getElementById("gpsG");
+const loadElement =
+  document.getElementById("load");
 
-const accuracyEl =
-  document.getElementById("accuracy");
-
-const gpsStatusEl =
-  document.getElementById("gpsStatus");
-
-const stateEl =
-  document.getElementById("state");
-
-const statusEl =
+const statusElement =
   document.getElementById("status");
-
-
-const motionAvailableEl =
-  document.getElementById("motionAvailable");
-
-const motionXEl =
-  document.getElementById("motionX");
-
-const motionYEl =
-  document.getElementById("motionY");
-
-const motionZEl =
-  document.getElementById("motionZ");
-
-const motionStatusEl =
-  document.getElementById("motionStatus");
-
 
 const startButton =
   document.getElementById("start");
@@ -393,74 +221,235 @@ const stopButton =
 
 
 /* =====================================================
-   RESET
+   AUDIO STARTEN
    ===================================================== */
 
-function resetValues() {
+function startEngineSound() {
 
-  speedEl.textContent = "0.0";
-
-  gpsAccelEl.textContent =
-    "0.00 m/s²";
-
-  gpsGEl.textContent =
-    "0.00 G";
-
-  accuracyEl.textContent =
-    "—";
-
-  gpsStatusEl.textContent =
-    "—";
-
-  stateEl.textContent =
-    "Warten";
-
-  motionXEl.textContent =
-    "—";
-
-  motionYEl.textContent =
-    "—";
-
-  motionZEl.textContent =
-    "—";
-
-  motionStatusEl.textContent =
-    "Keine Daten";
+  if (audioStarted) {
+    return;
+  }
 
 
-  lastSpeed = null;
-  lastTime = null;
+  audioContext =
+    new (window.AudioContext ||
+    window.webkitAudioContext)();
 
-  filteredGpsAccel = 0;
+
+  /*
+   * Hauptoszillator
+   */
+
+  oscillator =
+    audioContext.createOscillator();
+
+
+  /*
+   * Lautstärke
+   */
+
+  gainNode =
+    audioContext.createGain();
+
+
+  /*
+   * Filter macht den Klang etwas weicher.
+   */
+
+  filterNode =
+    audioContext.createBiquadFilter();
+
+
+  oscillator.type =
+    "sawtooth";
+
+
+  filterNode.type =
+    "lowpass";
+
+
+  filterNode.frequency.value =
+    1200;
+
+
+  /*
+   * Startlautstärke sehr niedrig.
+   */
+
+  gainNode.gain.value =
+    0.0001;
+
+
+  oscillator.connect(
+    filterNode
+  );
+
+
+  filterNode.connect(
+    gainNode
+  );
+
+
+  gainNode.connect(
+    audioContext.destination
+  );
+
+
+  oscillator.start();
+
+
+  audioStarted = true;
 }
 
 
 /* =====================================================
-   GPS POSITION
+   MOTOR SOUND AKTUALISIEREN
+   ===================================================== */
+
+function updateEngineSound() {
+
+  if (
+    !audioStarted ||
+    !oscillator
+  ) {
+    return;
+  }
+
+
+  /*
+   * Geschwindigkeit -> RPM
+   *
+   * 0 km/h    = 800 RPM
+   * 200 km/h  = 6500 RPM
+   */
+
+  let rpm =
+    800 +
+    (currentSpeed / 200) *
+    5700;
+
+
+  /*
+   * Begrenzen
+   */
+
+  rpm =
+    Math.max(
+      800,
+      Math.min(
+        6500,
+        rpm
+      )
+    );
+
+
+  /*
+   * Beschleunigung macht den Motor
+   * etwas aggressiver.
+   */
+
+  let load =
+    Math.abs(acceleration) * 20;
+
+
+  load =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        load
+      )
+    );
+
+
+  /*
+   * RPM -> Frequenz
+   */
+
+  const frequency =
+    rpm / 60;
+
+
+  oscillator.frequency.setTargetAtTime(
+    frequency,
+    audioContext.currentTime,
+    0.04
+  );
+
+
+  /*
+   * Lautstärke
+   */
+
+  let volume =
+    0.015 +
+    (load / 100) * 0.06;
+
+
+  /*
+   * Bei Stillstand sehr leise.
+   */
+
+  if (currentSpeed < 2) {
+
+    volume =
+      0.008;
+  }
+
+
+  gainNode.gain.setTargetAtTime(
+    volume,
+    audioContext.currentTime,
+    0.08
+  );
+
+
+  /*
+   * Filter bei hoher Drehzahl öffnen.
+   */
+
+  const filterFrequency =
+    700 +
+    (rpm / 6500) * 2500;
+
+
+  filterNode.frequency.setTargetAtTime(
+    filterFrequency,
+    audioContext.currentTime,
+    0.08
+  );
+
+
+  rpmElement.textContent =
+    Math.round(rpm) +
+    " RPM";
+
+
+  loadElement.textContent =
+    Math.round(load) +
+    " %";
+}
+
+
+/* =====================================================
+   GPS
    ===================================================== */
 
 function handlePosition(position) {
 
-  const coords =
-    position.coords;
-
   const now =
-    position.timestamp || Date.now();
+    position.timestamp ||
+    Date.now();
 
-
-  /*
-   * Geschwindigkeit des GPS.
-   *
-   * Einheit:
-   * Meter pro Sekunde
-   */
 
   let speed =
-    coords.speed;
+    position.coords.speed;
 
 
   /*
-   * Manche Browser liefern hier null.
+   * Falls speed nicht geliefert wird,
+   * versuchen wir aus GPS-Positionen
+   * zunächst nichts zu berechnen.
    */
 
   if (
@@ -468,57 +457,28 @@ function handlePosition(position) {
     !Number.isFinite(speed)
   ) {
 
-    gpsStatusEl.textContent =
-      "keine Geschwindigkeit";
-
-    statusEl.textContent =
-      "GPS aktiv";
+    statusElement.textContent =
+      "GPS aktiv – Geschwindigkeit fehlt";
 
     return;
   }
 
 
-  /*
-   * Negative Geschwindigkeit
-   * macht keinen Sinn.
-   */
-
   speed =
-    Math.max(0, speed);
+    Math.max(
+      0,
+      speed
+    );
 
 
-  /*
-   * m/s -> km/h
-   */
-
-  const kmh =
+  targetSpeed =
     speed * 3.6;
 
 
-  speedEl.textContent =
-    kmh.toFixed(1);
-
-
-  gpsStatusEl.textContent =
-    "OK";
-
-
   /*
-   * GPS Genauigkeit
+   * Beschleunigung aus
+   * Geschwindigkeitsänderung.
    */
-
-  if (
-    typeof coords.accuracy === "number"
-  ) {
-
-    accuracyEl.textContent =
-      coords.accuracy.toFixed(1) + " m";
-  }
-
-
-  /* ===================================================
-     GPS BESCHLEUNIGUNG
-     =================================================== */
 
   if (
     lastSpeed !== null &&
@@ -529,85 +489,23 @@ function handlePosition(position) {
       (now - lastTime) / 1000;
 
 
-    /*
-     * Nur sinnvolle Zeitabstände verwenden.
-     */
-
     if (
       dt > 0 &&
       dt < 5
     ) {
-
-      /*
-       * Beschleunigung:
-       *
-       * a = Delta v / Delta t
-       */
 
       const rawAcceleration =
         (speed - lastSpeed) / dt;
 
 
       /*
-       * GPS ist ziemlich verrauscht.
-       *
-       * Deshalb glätten wir.
+       * Glättung.
        */
 
-      filteredGpsAccel =
-        alpha * rawAcceleration +
-        (1 - alpha) *
-        filteredGpsAccel;
-
-
-      /*
-       * Beschleunigung anzeigen
-       */
-
-      gpsAccelEl.textContent =
-        filteredGpsAccel.toFixed(2) +
-        " m/s²";
-
-
-      /*
-       * G berechnen
-       */
-
-      const gpsG =
-        filteredGpsAccel / G;
-
-
-      gpsGEl.textContent =
-        gpsG.toFixed(2) +
-        " G";
-
-
-      /*
-       * Fahrzustand
-       */
-
-      if (gpsG > 0.05) {
-
-        stateEl.textContent =
-          "🚀 BESCHLEUNIGEN";
-
-      }
-
-      else if (gpsG < -0.05) {
-
-        stateEl.textContent =
-          "🛑 BREMSEN";
-
-      }
-
-      else {
-
-        stateEl.textContent =
-          "➡️ ROLLEN";
-      }
-
+      acceleration =
+        acceleration * 0.75 +
+        rawAcceleration * 0.25;
     }
-
   }
 
 
@@ -618,9 +516,12 @@ function handlePosition(position) {
     now;
 
 
-  statusEl.textContent =
-    "GPS aktiv";
+  speedElement.textContent =
+    targetSpeed.toFixed(1);
 
+
+  statusElement.textContent =
+    "GPS aktiv";
 }
 
 
@@ -630,141 +531,41 @@ function handlePosition(position) {
 
 function handleGpsError(error) {
 
-  let message =
-    "GPS Fehler";
-
-
   if (error.code === 1) {
 
-    message =
+    statusElement.textContent =
       "Standortzugriff verweigert";
 
+  } else {
+
+    statusElement.textContent =
+      "GPS Fehler";
   }
-
-  else if (error.code === 2) {
-
-    message =
-      "Standort nicht verfügbar";
-
-  }
-
-  else if (error.code === 3) {
-
-    message =
-      "GPS Zeitüberschreitung";
-  }
-
-
-  statusEl.textContent =
-    message;
-
-  gpsStatusEl.textContent =
-    "FEHLER";
-
 }
 
 
 /* =====================================================
-   DEVICE MOTION
+   AUDIO + ANIMATION
    ===================================================== */
 
-function handleMotion(event) {
+function audioLoop() {
 
   /*
-   * acceleration enthält normalerweise
-   * die Beschleunigung ohne Gravitation.
+   * Geschwindigkeit langsam anpassen,
+   * damit der Motor nicht springt.
    */
 
-  const acceleration =
-    event.acceleration;
+  currentSpeed +=
+    (targetSpeed - currentSpeed) *
+    0.08;
 
 
-  /*
-   * Falls der Browser nur
-   * accelerationIncludingGravity liefert,
-   * verwenden wir diese als Fallback.
-   */
-
-  const accelerationWithGravity =
-    event.accelerationIncludingGravity;
+  updateEngineSound();
 
 
-  let data =
-    acceleration;
-
-
-  if (!data) {
-
-    data =
-      accelerationWithGravity;
-  }
-
-
-  if (!data) {
-
-    motionStatusEl.textContent =
-      "Keine Daten";
-
-    return;
-  }
-
-
-  /*
-   * Sensor ist vorhanden!
-   */
-
-  motionAvailableEl.textContent =
-    "JA";
-
-
-  /*
-   * X
-   */
-
-  if (
-    typeof data.x === "number"
-  ) {
-
-    motionXEl.textContent =
-      data.x.toFixed(2) +
-      " m/s²";
-
-  }
-
-
-  /*
-   * Y
-   */
-
-  if (
-    typeof data.y === "number"
-  ) {
-
-    motionYEl.textContent =
-      data.y.toFixed(2) +
-      " m/s²";
-
-  }
-
-
-  /*
-   * Z
-   */
-
-  if (
-    typeof data.z === "number"
-  ) {
-
-    motionZEl.textContent =
-      data.z.toFixed(2) +
-      " m/s²";
-
-  }
-
-
-  motionStatusEl.textContent =
-    "DATEN EMPFANGEN";
-
+  requestAnimationFrame(
+    audioLoop
+  );
 }
 
 
@@ -776,26 +577,37 @@ startButton.addEventListener(
   "click",
   async function() {
 
-    resetValues();
+
+    /*
+     * Audio muss durch Benutzeraktion
+     * gestartet werden.
+     */
+
+    startEngineSound();
+
+
+    if (
+      audioContext.state ===
+      "suspended"
+    ) {
+
+      await audioContext.resume();
+    }
 
 
     /*
-     * GPS starten
+     * GPS
      */
 
     if (
       !("geolocation" in navigator)
     ) {
 
-      statusEl.textContent =
-        "GPS wird nicht unterstützt";
+      statusElement.textContent =
+        "GPS nicht verfügbar";
 
       return;
     }
-
-
-    statusEl.textContent =
-      "GPS wird gestartet …";
 
 
     watchId =
@@ -810,98 +622,18 @@ startButton.addEventListener(
       );
 
 
-    /*
-     * DeviceMotion starten
-     */
-
-    try {
-
-      /*
-       * Manche Browser verlangen
-       * eine explizite Berechtigung.
-       */
-
-      if (
-        typeof DeviceMotionEvent !==
-        "undefined" &&
-        typeof DeviceMotionEvent.requestPermission ===
-        "function"
-      ) {
-
-        const permission =
-          await DeviceMotionEvent.requestPermission();
-
-
-        if (
-          permission === "granted"
-        ) {
-
-          window.addEventListener(
-            "devicemotion",
-            handleMotion
-          );
-
-          motionAvailableEl.textContent =
-            "BEREIT";
-
-        }
-
-        else {
-
-          motionStatusEl.textContent =
-            "Berechtigung abgelehnt";
-
-        }
-
-      }
-
-      else if (
-        "DeviceMotionEvent" in window
-      ) {
-
-        /*
-         * Browser unterstützt DeviceMotion
-         * ohne separate Permission.
-         */
-
-        window.addEventListener(
-          "devicemotion",
-          handleMotion
-        );
-
-        motionAvailableEl.textContent =
-          "BEREIT";
-
-      }
-
-      else {
-
-        motionAvailableEl.textContent =
-          "NEIN";
-
-        motionStatusEl.textContent =
-          "Nicht unterstützt";
-      }
-
-    }
-
-    catch(error) {
-
-      motionAvailableEl.textContent =
-        "FEHLER";
-
-      motionStatusEl.textContent =
-        error.message || "Fehler";
-
-    }
-
-
     startButton.disabled =
       true;
 
     stopButton.disabled =
       false;
 
+
+    statusElement.textContent =
+      "Motor + GPS aktiv";
+
+
+    audioLoop();
   }
 );
 
@@ -925,16 +657,20 @@ stopButton.addEventListener(
     }
 
 
-    window.removeEventListener(
-      "devicemotion",
-      handleMotion
-    );
+    if (
+      gainNode &&
+      audioContext
+    ) {
+
+      gainNode.gain.setTargetAtTime(
+        0.0001,
+        audioContext.currentTime,
+        0.1
+      );
+    }
 
 
-    statusEl.textContent =
-      "Gestoppt";
-
-    stateEl.textContent =
+    statusElement.textContent =
       "Gestoppt";
 
 
@@ -943,10 +679,8 @@ stopButton.addEventListener(
 
     stopButton.disabled =
       true;
-
   }
 );
-
 
 </script>
 
